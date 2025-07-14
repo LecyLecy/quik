@@ -6,6 +6,7 @@ import ImageModal from '@/components/ImageModal'
 import MediaModal from '@/components/MediaModal'
 import GalleryModal from '@/components/GalleryModal'
 import DownloadAndDeleteConfirmationModal from '@/components/DownloadAndDeleteConfirmationModal'
+import DocumentPreview from '@/components/DocumentPreview'
 import Linkify from 'react-linkify'
 import { supabase } from '@/lib/supabase/client'
 import { updateNoteBubble } from '@/hooks/useSaveNote'
@@ -299,10 +300,11 @@ export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, onR
                   )}
 
                   {item.type === 'document' && (
-                    <div className="flex flex-col justify-center items-center h-full w-full text-white text-xs">
-                      <div className="text-4xl mb-1">📄</div>
-                      <p className="truncate w-full">{item.fileName}</p>
-                    </div>
+                    <DocumentPreview 
+                      fileName={item.fileName} 
+                      fileSize={item.fileSize}
+                      compact={true}
+                    />
                   )}
                 </div>
               )

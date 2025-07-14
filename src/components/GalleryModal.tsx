@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import type { MediaItem } from '@/types/note'
+import DocumentPreview from '@/components/DocumentPreview'
 
 interface GalleryModalProps {
   open: boolean
@@ -154,10 +155,11 @@ export default function GalleryModal({
                       </div>
                     </>
                   ) : (
-                    <div className="flex flex-col justify-center items-center h-full w-full text-white text-xs">
-                      <div className="text-4xl mb-1">📄</div>
-                      <p className="truncate w-full">{item.fileName}</p>
-                    </div>
+                    <DocumentPreview 
+                      fileName={item.fileName} 
+                      fileSize={item.fileSize}
+                      compact={false}
+                    />
                   )}
                 </div>
               )
