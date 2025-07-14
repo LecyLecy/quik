@@ -28,6 +28,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
   const [isCountdownMode, setIsCountdownMode] = useState(false)
   const [countdownDate, setCountdownDate] = useState('')
   const [countdownTime, setCountdownTime] = useState('')
+  const [isDragOver, setIsDragOver] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -60,11 +61,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
     }
   }, [editingNote])
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-
+  const uploadFile = async (file: File) => {
     const fileId = uuid()
     const fileExt = file.name.split('.').pop()
     const filePath = `${fileId}.${fileExt}`
@@ -75,7 +72,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
 
     if (error) {
       console.error('❌ Upload failed:', error)
-      return
+      return null
     }
 
     const publicUrl = supabase.storage.from('notes-media').getPublicUrl(filePath).data.publicUrl
@@ -98,7 +95,72 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
       createdAt: new Date().toISOString(),
     }
 
-    setNewUploads((prev) => [...prev, media])
+    return media
+  }
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData.items)
+    
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (file) {
+          // Generate a filename for pasted images
+          const timestamp = Date.now()
+          const ext = file.type.split('/')[1] || 'png'
+          const fileName = `pasted-image-${timestamp}.${ext}`
+          
+          // Create a new file with proper name
+          const renamedFile = new File([file], fileName, { type: file.type })
+          
+          const media = await uploadFile(renamedFile)
+          if (media) {
+            setNewUploads((prev) => [...prev, media])
+          }
+        }
+        break // Only handle the first image found
+      }
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+    
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length === 0) return
+
+    // Handle first file only (you can modify to handle multiple files)
+    const file = files[0]
+    const media = await uploadFile(file)
+    if (media) {
+      setNewUploads((prev) => [...prev, media])
+    }
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    const media = await uploadFile(file)
+    if (media) {
+      setNewUploads((prev) => [...prev, media])
+    }
   }
 
   const handleRemoveUpload = async (id: string) => {
@@ -215,7 +277,16 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
   const editingDefault = editingNote && !editingNote.isCountdown
 
   return (
-    <div ref={ref} className="p-4 bg-black border-t border-gray-800 sticky bottom-0">
+    <div 
+      ref={ref} 
+      className={`p-4 bg-black border-t border-gray-800 sticky bottom-0 transition-all ${
+        isDragOver ? 'border-blue-500 border-2 bg-blue-900/20' : ''
+      }`}
+      onPaste={handlePaste}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {(isCountdownMode || (editingNote && editingNote.isCountdown)) && (
         <div className="flex gap-2 mb-2">
           <input
