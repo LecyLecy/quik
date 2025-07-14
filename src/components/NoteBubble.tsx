@@ -14,6 +14,7 @@ interface NoteBubbleProps {
   bubble: NoteBubbleType
   onRequestDelete?: (bubble: NoteBubbleType) => void
   onRequestEdit?: (bubble: NoteBubbleType) => void
+  onRequestEditTime?: (bubble: NoteBubbleType) => void
   isEditing?: boolean
   selectMode?: boolean
   selected?: boolean
@@ -52,7 +53,7 @@ function formatCountdown(targetDate: Date) {
   }
 }
 
-export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, isEditing, selectMode = false, selected = false }: NoteBubbleProps) {
+export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, onRequestEditTime, isEditing, selectMode = false, selected = false }: NoteBubbleProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewType, setPreviewType] = useState<'image' | 'video' | 'gif' | null>(null)
   const [windowWidth, setWindowWidth] = useState<number>(
@@ -352,7 +353,18 @@ export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, isE
         Download
       </button>
     )}
-    {!isEditing && (
+    {/* Edit Time untuk countdown bubble */}
+    {bubble.isCountdown && !isEditing && (
+      <button
+        onClick={() => onRequestEditTime && onRequestEditTime(bubble)}
+        disabled={!onRequestEditTime || selectMode}
+        className="text-blue-400 hover:underline text-xs disabled:opacity-50"
+      >
+        Edit Time
+      </button>
+    )}
+    {/* Edit button hanya untuk non-countdown bubble */}
+    {!bubble.isCountdown && !isEditing && (
       <button
         onClick={() => onRequestEdit && onRequestEdit(bubble)}
         disabled={!onRequestEdit || selectMode}

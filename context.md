@@ -49,9 +49,6 @@ The app supports rich media previews, countdown notes, fullscreen modal previews
 
 # Pending Tasks
 
-- [ ] allow upload konten without description -> which means deleting content without desc will says "(no description)" for bubble without descriptions
-- [ ] fix gif preview, it supposed to be like an image preview but moving non stop, but it turns into a video player that doesnt play anything
-- [ ] fix edit button on bubbles, when i press it, it gives delete confirmation instead of letting me edit the bubble's description
 - [ ] adding countdown time edit, so if i entered a countdown bubble but i wanted to change the date, i can do that
 - [ ] allow paste & drag and drop content
 - [ ] i want to make file preview (when on bubble) i can see its name, file type, whats inside it, or atleast the top of the document or maybe blurry like on whatsapp, but i still need to click it and use other document opener app to view the whole document
@@ -69,42 +66,7 @@ The app supports rich media previews, countdown notes, fullscreen modal previews
 - Tailwind CSS for UI
 - `react-linkify` for URL parsing
 - (Optionally) Electron for desktop app shell (planned)
-
-**Folder Structure:**
-
-/app
-
-/page.tsx             # Main app page, note list/grid, input, scroll logic
-
-/components
-
-NoteBubble.tsx        # Single note/bubble UI, all preview logic
-
-NoteInput.tsx         # Input form (add/edit)
-
-GalleryModal.tsx      # Modal for viewing all media in a bubble
-
-DownloadAndDeleteConfirmationModal.tsx # Reusable confirmation modal
-
-MediaModal.tsx        # Fullscreen preview for image/video/gif
-
-/hooks
-
-useNotes.ts           # Custom hook: fetch notes, setNotes, refetch
-
-useSaveNote.ts        # Custom hook: save, edit, delete note
-
-/types
-
-note.ts               # Typescript types/interfaces
-
-/public
-
-(for static assets)
-
-/styles
-
-globals.css           # Tailwind and global style
+- 
 
 **Context for GitHub Copilot:**
 This is a mobile-first notes/chat app with rich media support, built with Next.js + Supabase.

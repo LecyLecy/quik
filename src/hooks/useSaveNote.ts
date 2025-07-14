@@ -23,10 +23,12 @@ export async function saveNoteBubble(note: NoteBubble) {
 export async function updateNoteBubble(
   id: string,
   description: string,
-  contents?: MediaItem[]
+  contents?: MediaItem[],
+  countdownDate?: string
 ) {
   const updateObj: any = { description }
-  if (contents) updateObj.contents = contents
+  if (contents !== undefined) updateObj.contents = contents
+  if (countdownDate !== undefined) updateObj.countdown_date = countdownDate
 
   const { error } = await supabase
     .from('notes')

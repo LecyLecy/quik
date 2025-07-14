@@ -11,6 +11,7 @@ export default function HomePage() {
   const { notes, loading, refetch, setNotes } = useNotes()
   const [pendingDelete, setPendingDelete] = useState<NoteBubble | null>(null)
   const [editingNote, setEditingNote] = useState<NoteBubble | null>(null)
+  const [editingTimeNote, setEditingTimeNote] = useState<NoteBubble | null>(null)
   const [deleting, setDeleting] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const inputWrapperRef = useRef<HTMLDivElement>(null)
@@ -92,6 +93,7 @@ export default function HomePage() {
 
   const handleEditDone = async () => {
     setEditingNote(null)
+    setEditingTimeNote(null)
     await refetch()
     setTimeout(() => {
       if (scrollContainerRef.current) {
@@ -237,6 +239,7 @@ export default function HomePage() {
                   bubble={bubble}
                   onRequestDelete={!selectMode ? () => setPendingDelete(bubble) : undefined}
                   onRequestEdit={!selectMode ? () => setEditingNote(bubble) : undefined}
+                  onRequestEditTime={!selectMode ? () => setEditingTimeNote(bubble) : undefined}
                   isEditing={editingNote?.id === bubble.id}
                   selectMode={selectMode}
                   selected={selected}
@@ -263,9 +266,12 @@ export default function HomePage() {
       {/* Input area wrapper */}
       <div ref={inputWrapperRef}>
         <NoteInput
-          editingNote={editingNote}
+          editingNote={editingNote || editingTimeNote}
           onEditDone={handleEditDone}
-          onEditCancelled={() => setEditingNote(null)}
+          onEditCancelled={() => {
+            setEditingNote(null)
+            setEditingTimeNote(null)
+          }}
           onNoteSaved={handleEditDone} // <- trigger scroll setelah refetch
           onOptimisticAdd={(note) => setNotes((prev) => [...prev, note])}
         />

@@ -36,10 +36,27 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
       setDescription(editingNote.description || '')
       setExistingUploads(editingNote.contents || [])
       setNewUploads([])
+      
+      // Jika edit countdown bubble, set countdown mode dan parse date/time
+      if (editingNote.isCountdown && editingNote.countdownDate) {
+        setIsCountdownMode(true)
+        const date = new Date(editingNote.countdownDate)
+        const dateStr = date.toISOString().split('T')[0] // YYYY-MM-DD
+        const timeStr = date.toTimeString().slice(0, 5) // HH:MM
+        setCountdownDate(dateStr)
+        setCountdownTime(timeStr)
+      } else {
+        setIsCountdownMode(false)
+        setCountdownDate('')
+        setCountdownTime('')
+      }
     } else {
       setDescription('')
       setExistingUploads([])
       setNewUploads([])
+      setIsCountdownMode(false)
+      setCountdownDate('')
+      setCountdownTime('')
     }
   }, [editingNote])
 
@@ -108,7 +125,9 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
   }
 
   const handleSend = async () => {
-    if (!description.trim()) return
+    // Allow send if there's description OR if there are files to upload
+    const hasContent = description.trim() || existingUploads.length > 0 || newUploads.length > 0
+    if (!hasContent) return
 
     const isCountdown = Boolean(isCountdownMode && countdownDate && countdownTime)
     const fullCountdownISO = isCountdown
@@ -137,10 +156,14 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
           updatedContents = [...existingUploads, ...newUploads]
         }
 
+        // Jika edit countdown bubble, kirim countdown date
+        const updateCountdownDate = editingNote.isCountdown ? fullCountdownISO || undefined : undefined
+
         await updateNoteBubble(
           editingNote.id,
           description,
-          isEditingDefault ? updatedContents : undefined // update contents hanya untuk default
+          isEditingDefault ? updatedContents : undefined, // update contents hanya untuk default
+          updateCountdownDate // update countdown date jika edit countdown
         )
         onEditDone?.()
       } catch (err) {
@@ -193,7 +216,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
 
   return (
     <div ref={ref} className="p-4 bg-black border-t border-gray-800 sticky bottom-0">
-      {isCountdownMode && (
+      {(isCountdownMode || (editingNote && editingNote.isCountdown)) && (
         <div className="flex gap-2 mb-2">
           <input
             type="date"
@@ -211,7 +234,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
       )}
 
       {/* Upload preview */}
-      {(!isCountdownMode && (existingUploads.length + newUploads.length) > 0) && (
+      {(!isCountdownMode && !(editingNote && editingNote.isCountdown) && (existingUploads.length + newUploads.length) > 0) && (
         <div className="flex flex-wrap gap-3 mb-3">
           {[...existingUploads, ...newUploads].map((item) => (
             <div
