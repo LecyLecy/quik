@@ -342,9 +342,12 @@ export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, isE
     {/* Download untuk bubble satu konten */}
     {bubble.contents.length === 1 && (
       <button
-        onClick={() => onRequestDelete && onRequestDelete(bubble)}
+        onClick={() => {
+          setDownloadTarget(bubble.contents[0])
+          setDownloadModalOpen(true)
+        }}
         className="text-green-400 hover:underline text-xs"
-        disabled={!onRequestDelete || selectMode}
+        disabled={selectMode}
       >
         Download
       </button>
