@@ -14,13 +14,13 @@ interface NoteInputProps {
   onEditCancelled?: () => void
 }
 
-const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
+const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput({
   onNoteSaved,
   onOptimisticAdd,
   editingNote,
   onEditDone,
   onEditCancelled,
-}, ref) => {
+}, ref) {
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
   const [existingUploads, setExistingUploads] = useState<MediaItem[]>([])
@@ -182,10 +182,6 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
     setExistingUploads((prev) => prev.filter((item) => item.id !== id))
   }
 
-  const toggleCountdownMode = () => {
-    setIsCountdownMode((prev) => !prev)
-  }
-
   const handleSend = async () => {
     // Allow send if there's description OR if there are files to upload
     const hasContent = description.trim() || existingUploads.length > 0 || newUploads.length > 0
@@ -274,7 +270,6 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(({
   }
 
   // Cek apakah sedang edit bubble default (bukan countdown)
-  const editingDefault = editingNote && !editingNote.isCountdown
 
   return (
     <div 

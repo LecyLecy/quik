@@ -1,5 +1,7 @@
 'use client'
 
+import { memo } from 'react'
+
 interface DocumentPreviewProps {
   fileName?: string
   fileSize?: number
@@ -7,7 +9,7 @@ interface DocumentPreviewProps {
   compact?: boolean
 }
 
-export default function DocumentPreview({ 
+const DocumentPreview = memo(function DocumentPreview({ 
   fileName = 'Document', 
   fileSize, 
   className = '', 
@@ -65,4 +67,6 @@ export default function DocumentPreview({
       )}
     </div>
   )
-}
+})
+
+export default DocumentPreview

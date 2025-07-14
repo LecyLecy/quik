@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo, useCallback } from 'react'
 import type { NoteBubble as NoteBubbleType, MediaItem } from '@/types/note'
-import ImageModal from '@/components/ImageModal'
 import MediaModal from '@/components/MediaModal'
 import GalleryModal from '@/components/GalleryModal'
 import DownloadAndDeleteConfirmationModal from '@/components/DownloadAndDeleteConfirmationModal'
 import DocumentPreview from '@/components/DocumentPreview'
+import { useWindowWidth } from '@/hooks/useWindowWidth'
 import Linkify from 'react-linkify'
 import { supabase } from '@/lib/supabase/client'
 import { updateNoteBubble } from '@/hooks/useSaveNote'
@@ -54,27 +54,29 @@ function formatCountdown(targetDate: Date) {
   }
 }
 
-export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, onRequestEditTime, isEditing, selectMode = false, selected = false }: NoteBubbleProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [previewType, setPreviewType] = useState<'image' | 'video' | 'gif' | null>(null)
-  const [windowWidth, setWindowWidth] = useState<number>(
-    typeof window !== 'undefined' ? window.innerWidth : 1200
-  )
+const NoteBubble = memo(function NoteBubble({ 
+  bubble, 
+  onRequestDelete, 
+  onRequestEdit, 
+  onRequestEditTime, 
+  isEditing, 
+  selectMode = false, 
+  selected = false 
+}: NoteBubbleProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [countdownText, setCountdownText] = useState('')
+  
+  // Keep existing state for now, gradually migrate
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewType, setPreviewType] = useState<'image' | 'video' | 'gif' | null>(null)
   const [showGallery, setShowGallery] = useState(false)
-
-  // Download & Delete modal state
   const [downloadModalOpen, setDownloadModalOpen] = useState(false)
   const [downloadTarget, setDownloadTarget] = useState<MediaItem | null>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null)
-
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  
+  // Use window width hook
+  const { isMobile } = useWindowWidth()
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -100,7 +102,6 @@ export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, onR
     }
   }, [bubble.isCountdown, bubble.countdownDate])
 
-  const isMobile = windowWidth <= 768
   const previewLimit = isMobile ? 4 : 6
 
   const visibleItems = bubble.contents.slice(0, previewLimit)
@@ -112,21 +113,25 @@ export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, onR
       ? bubble.description
       : bubble.description?.slice(0, 200) + '...'
 
-  const handleMediaClick = (item: MediaItem) => {
+  const handleMediaClick = useCallback((item: MediaItem) => {
     if (item.type === 'image' || item.type === 'gif' || item.type === 'video') {
       setPreviewUrl(item.url)
       setPreviewType(item.type)
     }
-    // Add document preview logic here if needed
-  }
+  }, [])
 
-  // Handler hapus konten (bubble dan storage)
-  const handleDeleteContent = async (item: MediaItem) => {
-    await supabase.storage.from('notes-media').remove([item.storagePath])
-    const newContents = bubble.contents.filter(i => i.id !== item.id)
-    await updateNoteBubble(bubble.id, bubble.description || '', newContents)
-    if (typeof window !== "undefined") window.location.reload()
-  }
+  // Handler hapus konten (bubble dan storage) - optimized without page reload
+  const handleDeleteContent = useCallback(async (item: MediaItem) => {
+    try {
+      await supabase.storage.from('notes-media').remove([item.storagePath])
+      const newContents = bubble.contents.filter(i => i.id !== item.id)
+      await updateNoteBubble(bubble.id, bubble.description || '', newContents)
+      // Trigger re-fetch in parent component instead of page reload
+      window.dispatchEvent(new Event('noteContentDeleted'))
+    } catch (error) {
+      console.error('Error deleting content:', error)
+    }
+  }, [bubble.id, bubble.description, bubble.contents])
 
   return (
     <>
@@ -388,11 +393,7 @@ export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, onR
       </div>
 
       {/* Preview modals */}
-      {previewUrl && previewType === 'image' && (
-        <ImageModal imageUrl={previewUrl} onClose={() => setPreviewUrl(null)} />
-      )}
-
-      {previewUrl && (previewType === 'video' || previewType === 'gif') && (
+      {previewUrl && previewType && (
         <MediaModal
           mediaUrl={previewUrl}
           type={previewType}
@@ -453,7 +454,7 @@ export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, onR
                 window.URL.revokeObjectURL(url)
                 a.remove()
               }, 200)
-            } catch (err) {
+            } catch {
               alert('Failed to download file!')
             }
           }}
@@ -483,4 +484,6 @@ export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, onR
       )}
     </>
   )
-}
+})
+
+export default NoteBubble

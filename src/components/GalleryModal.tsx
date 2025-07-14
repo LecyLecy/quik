@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import BaseModal from '@/components/BaseModal'
 import type { MediaItem } from '@/types/note'
 import DocumentPreview from '@/components/DocumentPreview'
 
@@ -23,26 +23,11 @@ export default function GalleryModal({
   onRequestDownload,
   onRequestDelete,
 }: GalleryModalProps) {
-  useEffect(() => {
-    if (!open) return
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [open, onClose])
-
-  if (!open) return null
-
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+    <BaseModal isOpen={open} onClose={onClose} showBackButton={false}>
       <div
         className="bg-[#1e1e1e] rounded-xl max-w-[90vw] sm:max-w-[600px] w-full"
         style={{ maxHeight: 640, minHeight: 350, position: 'relative' }}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header: Back + Description */}
         <div
@@ -167,6 +152,6 @@ export default function GalleryModal({
           </div>
         </div>
       </div>
-    </div>
+    </BaseModal>
   )
 }

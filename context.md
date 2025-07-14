@@ -49,7 +49,6 @@ The app supports rich media previews, countdown notes, fullscreen modal previews
 
 # Pending Tasks
 
-- [ ] i want to make file preview (when on bubble) i can see its name, file type, whats inside it, or atleast the top of the document or maybe blurry like on whatsapp, but i still need to click it and use other document opener app to view the whole document
 - [ ] make it responsive for all 3 devices desktop (laptop), mobile (poco f3), tab (xiaomi pad 6)
 
 ---

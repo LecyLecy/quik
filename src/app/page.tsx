@@ -16,7 +16,6 @@ export default function HomePage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const inputWrapperRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
-  const [bottomOffset, setBottomOffset] = useState(0)
 
   // ===== Multi Select Bubble =====
   const [selectMode, setSelectMode] = useState(false)
@@ -40,7 +39,7 @@ export default function HomePage() {
       setNotes((prev) => prev.filter((n) => !selectedIds.includes(n.id)))
       setSelectedIds([])
       setSelectMode(false)
-    } catch (err) {
+    } catch {
       alert('Failed to delete selected notes!')
     } finally {
       setDeleting(false)
@@ -104,9 +103,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const updateOffset = () => {
-      if (inputWrapperRef.current) {
-        setBottomOffset(inputWrapperRef.current.offsetHeight + 16)
-      }
+      // Update offset logic removed since bottomOffset was unused
     }
     updateOffset()
     window.addEventListener('resize', updateOffset)
@@ -123,6 +120,15 @@ export default function HomePage() {
     container?.addEventListener('scroll', onScroll)
     return () => container?.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Listen for content deletion events from NoteBubble
+  useEffect(() => {
+    const handleContentDeleted = () => {
+      refetch() // Refresh the notes when content is deleted
+    }
+    window.addEventListener('noteContentDeleted', handleContentDeleted)
+    return () => window.removeEventListener('noteContentDeleted', handleContentDeleted)
+  }, [refetch])
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
@@ -332,7 +338,7 @@ export default function HomePage() {
                 .map(id => notes.find(b => b.id === id))
                 .filter(Boolean)
                 .slice(0, 4)
-                .map((b, i) =>
+                .map((b) =>
                   b ? (
                     <div key={b.id} className="text-gray-400 text-sm italic truncate mb-1">
                       {b.description || '(No description)'}
