@@ -240,7 +240,7 @@ export default function HomePage() {
                   onRequestDelete={!selectMode ? () => setPendingDelete(bubble) : undefined}
                   onRequestEdit={!selectMode ? () => setEditingNote(bubble) : undefined}
                   onRequestEditTime={!selectMode ? () => setEditingTimeNote(bubble) : undefined}
-                  isEditing={editingNote?.id === bubble.id}
+                  isEditing={editingNote?.id === bubble.id || editingTimeNote?.id === bubble.id}
                   selectMode={selectMode}
                   selected={selected}
                 />
