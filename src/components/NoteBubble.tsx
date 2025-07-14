@@ -351,7 +351,7 @@ export default function NoteBubble({ bubble, onRequestDelete, onRequestEdit, isE
     )}
     {!isEditing && (
       <button
-        onClick={() => onRequestDelete && onRequestDelete(bubble)}
+        onClick={() => onRequestEdit && onRequestEdit(bubble)}
         disabled={!onRequestEdit || selectMode}
         className="text-blue-400 hover:underline text-xs disabled:opacity-50"
       >
