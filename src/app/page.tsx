@@ -1,103 +1,360 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, useRef, useEffect } from 'react'
+import { useNotes } from '@/hooks/useNotes'
+import NoteItem from '@/components/NoteBubble'
+import NoteInput from '@/components/NoteInput'
+import type { NoteBubble } from '@/types/note'
+import { deleteNoteBubble } from '@/hooks/useSaveNote'
+
+export default function HomePage() {
+  const { notes, loading, refetch, setNotes } = useNotes()
+  const [pendingDelete, setPendingDelete] = useState<NoteBubble | null>(null)
+  const [editingNote, setEditingNote] = useState<NoteBubble | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const inputWrapperRef = useRef<HTMLDivElement>(null)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+  const [bottomOffset, setBottomOffset] = useState(0)
+
+  // ===== Multi Select Bubble =====
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [showMultiDeleteModal, setShowMultiDeleteModal] = useState(false)
+
+  // Track id note terakhir
+  const prevLastId = useRef<string | null>(null)
+
+  // ===== Multi Delete Handler =====
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return
+    try {
+      setDeleting(true)
+      await Promise.all(
+        selectedIds.map(async (id) => {
+          const bubble = notes.find(n => n.id === id)
+          if (bubble) await deleteNoteBubble(bubble)
+        })
+      )
+      setNotes((prev) => prev.filter((n) => !selectedIds.includes(n.id)))
+      setSelectedIds([])
+      setSelectMode(false)
+    } catch (err) {
+      alert('Failed to delete selected notes!')
+    } finally {
+      setDeleting(false)
+      setShowMultiDeleteModal(false)
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+        }
+      }, 150)
+    }
+  }
+
+  // ===== Scroll fix: always scroll to bottom after notes update =====
+  useEffect(() => {
+    // Bandingkan id note terakhir sebelum dan sesudah update
+    const lastId = notes.length ? notes[notes.length - 1].id : null
+    if (
+      scrollContainerRef.current &&
+      lastId !== prevLastId.current
+    ) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+          }
+        })
+      })
+    }
+    prevLastId.current = lastId
+  }, [notes])
+
+  const handleDelete = async () => {
+    if (!pendingDelete) return
+    try {
+      setDeleting(true)
+      await deleteNoteBubble(pendingDelete)
+      setNotes((prev) => prev.filter((n) => n.id !== pendingDelete.id))
+    } catch (err) {
+      console.error('❌ Failed to delete note:', err)
+    } finally {
+      setDeleting(false)
+      setPendingDelete(null)
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+        }
+      }, 120)
+    }
+  }
+
+  const handleEditDone = async () => {
+    setEditingNote(null)
+    await refetch()
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+      }
+    }, 150)
+  }
+
+  useEffect(() => {
+    const updateOffset = () => {
+      if (inputWrapperRef.current) {
+        setBottomOffset(inputWrapperRef.current.offsetHeight + 16)
+      }
+    }
+    updateOffset()
+    window.addEventListener('resize', updateOffset)
+    return () => window.removeEventListener('resize', updateOffset)
+  }, [])
+  useEffect(() => {
+    const onScroll = () => {
+      if (!scrollContainerRef.current) return
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current
+      const atBottom = scrollHeight - scrollTop - clientHeight < 50
+      setShowScrollButton(!atBottom)
+    }
+    const container = scrollContainerRef.current
+    container?.addEventListener('scroll', onScroll)
+    return () => container?.removeEventListener('scroll', onScroll)
+  }, [])
+  const scrollToBottom = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+    }
+  }
+
+  // ===== Bubble Select Handler =====
+  const handleBubbleLongPress = (id: string) => {
+    if (!selectMode) {
+      if (editingNote) setEditingNote(null)
+      setSelectMode(true)
+      setSelectedIds([id])
+    }
+  }
+  const handleBubbleSelectToggle = (id: string) => {
+    if (!selectMode) return
+    if (editingNote) setEditingNote(null)
+    setSelectedIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((sid) => sid !== id)
+        : [...prev, id]
+    )
+  }
+
+  const handleCancelSelectMode = () => {
+    setSelectMode(false)
+    setSelectedIds([])
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+      }
+    }, 120)
+  }
+
+  // ===== UI =====
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <main className="flex flex-col h-screen bg-black text-white relative">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-50 bg-black px-4 pt-4 pb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span>📒</span>
+          <h1 className="text-xl font-semibold">Your Notes</h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        {!selectMode ? (
+          <button
+            onClick={async () => {
+              await refetch()
+              setTimeout(() => {
+                if (scrollContainerRef.current) {
+                  scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+                }
+              }, 120)
+            }}
+            className="text-sm text-blue-400 hover:underline"
+          >
+            Refresh
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={handleCancelSelectMode}
+              className="text-sm bg-gray-700 text-white px-3 py-1 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => setShowMultiDeleteModal(true)}
+              disabled={selectedIds.length === 0}
+              className={`text-sm px-3 py-1 rounded font-semibold
+                ${selectedIds.length === 0
+                  ? 'bg-gray-800 text-gray-400 cursor-not-allowed'
+                  : 'bg-red-600 text-white hover:bg-red-700'}
+              `}
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Scrollable notes */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto px-4 flex flex-col gap-3"
+      >
+        {loading ? (
+          <p className="text-gray-400">Loading notes...</p>
+        ) : notes.length === 0 ? (
+          <p className="text-gray-500">No notes yet.</p>
+        ) : (
+          notes.map((bubble) => {
+            const selected = selectMode && selectedIds.includes(bubble.id)
+            return (
+              <div
+                key={bubble.id}
+                className={`
+                  relative group
+                  transition-all
+                `}
+                // Hanya toggle select di select mode
+                onClick={() => selectMode && handleBubbleSelectToggle(bubble.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  handleBubbleLongPress(bubble.id)
+                }}
+                onTouchStart={(e) => {
+                  if (!selectMode) {
+                    const timer = setTimeout(() => handleBubbleLongPress(bubble.id), 700)
+                    e.target.addEventListener('touchend', () => clearTimeout(timer), { once: true })
+                  }
+                }}
+              >
+                <NoteItem
+                  bubble={bubble}
+                  onRequestDelete={!selectMode ? () => setPendingDelete(bubble) : undefined}
+                  onRequestEdit={!selectMode ? () => setEditingNote(bubble) : undefined}
+                  isEditing={editingNote?.id === bubble.id}
+                  selectMode={selectMode}
+                  selected={selected}
+                />
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* Scroll to bottom button */}
+      {showScrollButton && (
+        <button
+          onClick={scrollToBottom}
+          style={{ top: 56, right: 16 }}
+          className="fixed z-30 bg-blue-600 text-white px-4 py-2 rounded shadow-lg hover:bg-blue-700 transition"
+          aria-label="Scroll to bottom"
+          title="Scroll to bottom"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          ↓
+        </button>
+      )}
+
+      {/* Input area wrapper */}
+      <div ref={inputWrapperRef}>
+        <NoteInput
+          editingNote={editingNote}
+          onEditDone={handleEditDone}
+          onEditCancelled={() => setEditingNote(null)}
+          onNoteSaved={handleEditDone} // <- trigger scroll setelah refetch
+          onOptimisticAdd={(note) => setNotes((prev) => [...prev, note])}
+        />
+      </div>
+
+      {/* Single delete confirm modal */}
+      {pendingDelete && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center"
+          onClick={() => setPendingDelete(null)}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <div
+            className="bg-[#2c2c2c] p-6 rounded w-full max-w-xs sm:max-w-md text-center relative mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-white mb-4">
+              Are you sure you want to delete this note?
+            </p>
+            {pendingDelete.description && (
+              <p className="text-gray-400 text-sm mb-4 italic">
+                “{pendingDelete.description.slice(0, 100)}”
+              </p>
+            )}
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setPendingDelete(null)}
+                className="bg-gray-600 px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="bg-red-600 px-4 py-2 rounded disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Multi delete confirm modal */}
+      {showMultiDeleteModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center"
+          onClick={() => setShowMultiDeleteModal(false)}
         >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+          <div
+            className="bg-[#2c2c2c] p-6 rounded w-full max-w-xs sm:max-w-md text-center relative mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-white mb-4">
+              Delete these bubbles?
+            </p>
+            <div className="mb-4 text-left max-h-40 overflow-y-auto">
+              {selectedIds
+                .map(id => notes.find(b => b.id === id))
+                .filter(Boolean)
+                .slice(0, 4)
+                .map((b, i) =>
+                  b ? (
+                    <div key={b.id} className="text-gray-400 text-sm italic truncate mb-1">
+                      {b.description || '(No description)'}
+                    </div>
+                  ) : null
+                )}
+              {selectedIds.length > 4 && (
+                <div className="text-gray-400 text-sm italic">...</div>
+              )}
+            </div>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setShowMultiDeleteModal(false)}
+                className="bg-gray-600 px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteSelected}
+                disabled={deleting || selectedIds.length === 0}
+                className="bg-red-600 px-4 py-2 rounded disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  )
 }
