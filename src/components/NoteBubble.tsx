@@ -76,7 +76,7 @@ const NoteBubble = memo(function NoteBubble({
   const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null)
   
   // Use window width hook
-  const { isMobile } = useWindowWidth()
+  const { isMobile, isTablet } = useWindowWidth()
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -102,8 +102,31 @@ const NoteBubble = memo(function NoteBubble({
     }
   }, [bubble.isCountdown, bubble.countdownDate])
 
-  const previewLimit = isMobile ? 4 : 6
+  // Calculate grid columns based on screen size
+  const gridCols = isMobile ? 2 : isTablet ? 3 : 4
+  
+  // Calculate how many items to show to fill the grid efficiently
+  const calculatePreviewLimit = () => {
+    const totalItems = bubble.contents.length
+    
+    // If we have very few items, show all
+    if (totalItems <= gridCols) {
+      return totalItems
+    }
+    
+    // Calculate maximum items we can show in 2 rows
+    const maxItemsIn2Rows = gridCols * 2
+    
+    // If total items fit exactly in 1-2 rows, show all
+    if (totalItems <= maxItemsIn2Rows) {
+      return totalItems
+    }
+    
+    // If we have more than 2 rows worth, show 2 rows minus 1 spot for "+X"
+    return maxItemsIn2Rows - 1
+  }
 
+  const previewLimit = calculatePreviewLimit()
   const visibleItems = bubble.contents.slice(0, previewLimit)
   const extraCount = bubble.contents.length - visibleItems.length
 
@@ -137,8 +160,8 @@ const NoteBubble = memo(function NoteBubble({
     <>
 <div
   className={`
-    rounded-xl p-4 mb-3 shadow-sm w-fit 
-    max-w-[90vw] sm:max-w-[600px] 
+    rounded-xl p-3 sm:p-4 mb-3 shadow-sm w-full 
+    max-w-full overflow-hidden
     relative transition-all duration-200 
     ${isEditing ? 'bg-[#004d40] border border-teal-400' : 'bg-[#1e1e1e]'} text-white
     ${selectMode && selected ? 'outline outline-2 outline-green-500' : ''}
@@ -198,7 +221,13 @@ const NoteBubble = memo(function NoteBubble({
 
         {/* Media contents */}
         {!bubble.isCountdown && bubble.contents.length > 0 && (
-          <div className={`grid gap-3 mt-2 ${isMobile ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          <div className={`grid gap-1 sm:gap-2 mt-3 ${
+            isMobile 
+              ? 'grid-cols-2' 
+              : isTablet 
+                ? 'grid-cols-3' 
+                : 'grid-cols-4'
+          }`}>
             {visibleItems.map((item, index) => {
               const isLastVisible = index === visibleItems.length - 1 && extraCount > 0
               const isVideo = item.type === 'video'
@@ -212,11 +241,11 @@ const NoteBubble = memo(function NoteBubble({
                 <div
                   key={item.id}
                   onClick={handleThisMediaClick}
-                  className="relative bg-[#2c2c2c] rounded cursor-pointer overflow-hidden w-40 h-40 sm:w-52 sm:h-52 hover:scale-105 transition-transform duration-150"
+                  className="relative bg-[#2c2c2c] rounded cursor-pointer overflow-hidden aspect-square hover:scale-105 transition-transform duration-150"
                 >
                   {/* Icon download & delete untuk multi konten */}
                   {bubble.contents.length > 1 && !isLastVisible && (
-                    <div className="absolute top-1 right-1 z-20 flex gap-2">
+                    <div className="absolute top-1 right-1 z-20 flex gap-1">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -226,7 +255,7 @@ const NoteBubble = memo(function NoteBubble({
                         className="text-green-400 bg-black/60 rounded-full p-1 hover:bg-black/90"
                         title="Download"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
                         </svg>
                       </button>
@@ -236,10 +265,10 @@ const NoteBubble = memo(function NoteBubble({
                           setDeleteTarget(item)
                           setDeleteModalOpen(true)
                         }}
-                        className="text-red-500 bg-black/60 rounded-full p-1 hover:bg-black/90 ml-1"
+                        className="text-red-500 bg-black/60 rounded-full p-1 hover:bg-black/90"
                         title="Delete"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
                         </svg>
                       </button>
@@ -276,7 +305,7 @@ const NoteBubble = memo(function NoteBubble({
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="h-10 w-10 text-white opacity-75"
+                          className="h-8 w-8 sm:h-10 sm:w-10 text-white opacity-75"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"

@@ -274,7 +274,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
   return (
     <div 
       ref={ref} 
-      className={`p-4 bg-black border-t border-gray-800 sticky bottom-0 transition-all ${
+      className={`p-3 sm:p-4 bg-black border-t border-gray-800 sticky bottom-0 transition-all ${
         isDragOver ? 'border-blue-500 border-2 bg-blue-900/20' : ''
       }`}
       onPaste={handlePaste}
