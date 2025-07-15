@@ -26,8 +26,8 @@ export default function GalleryModal({
   return (
     <BaseModal isOpen={open} onClose={onClose} showBackButton={false}>
       <div
-        className="bg-[#1e1e1e] rounded-xl max-w-[90vw] sm:max-w-[600px] w-full"
-        style={{ maxHeight: 640, minHeight: 350, position: 'relative' }}
+        className="bg-[#1e1e1e] rounded-xl max-w-[95vw] sm:max-w-[85vw] lg:max-w-[700px] w-full mx-auto"
+        style={{ maxHeight: '90vh', minHeight: 350, position: 'relative' }}
       >
         {/* Header: Back + Description */}
         <div
@@ -55,9 +55,10 @@ export default function GalleryModal({
         </div>
         {/* Grid Gallery, scrollable */}
         <div
-          className="p-4 pt-0"
+          className="p-4 pt-0 hide-scrollbar"
           style={{
-            height: 500,
+            height: 'calc(90vh - 120px)',
+            maxHeight: '500px',
             overflowY: 'auto'
           }}
         >
@@ -68,7 +69,7 @@ export default function GalleryModal({
               return (
                 <div
                   key={item.id}
-                  className="relative bg-[#2c2c2c] rounded overflow-hidden cursor-pointer w-40 h-40 sm:w-52 sm:h-52 flex items-center justify-center group"
+                  className="relative bg-[#2c2c2c] rounded overflow-hidden cursor-pointer aspect-square flex items-center justify-center group"
                   onClick={() => onItemClick(item)}
                   title={item.fileName}
                 >

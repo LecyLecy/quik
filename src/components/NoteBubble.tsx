@@ -122,8 +122,9 @@ const NoteBubble = memo(function NoteBubble({
       return totalItems
     }
     
-    // If we have more than 2 rows worth, show 2 rows minus 1 spot for "+X"
-    return maxItemsIn2Rows - 1
+    // If we have more than 2 rows worth, show full 2 rows
+    // The "+X" overlay will appear over the last visible item
+    return maxItemsIn2Rows
   }
 
   const previewLimit = calculatePreviewLimit()
