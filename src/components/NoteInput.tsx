@@ -387,11 +387,14 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
           {!editingNote && (
             <button
               onClick={() => setIsCountdownMode((prev) => !prev)}
-              className={`px-3 py-1 rounded ${
-                isCountdownMode ? 'bg-teal-600 text-white' : 'bg-gray-700 text-white'
+              className={`p-2 rounded transition-colors ${
+                isCountdownMode ? 'bg-teal-600 hover:bg-teal-500 text-white' : 'bg-gray-700 hover:bg-gray-600 text-white'
               }`}
+              title={isCountdownMode ? 'Switch to normal note' : 'Create countdown'}
             >
-              Countdown
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </button>
           )}
         </div>
