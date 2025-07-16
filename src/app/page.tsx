@@ -362,7 +362,7 @@ export default function HomePage() {
 
   // ===== UI =====
   return (
-    <main className="flex flex-col h-screen bg-black text-white relative max-w-screen-2xl mx-auto">
+    <main className="flex flex-col h-screen bg-black text-white relative">
       {/* Sticky header */}
       <div className="sticky top-0 z-50 bg-black px-3 sm:px-6 lg:px-8 pt-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -463,7 +463,7 @@ export default function HomePage() {
       {/* Scrollable notes */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 flex flex-col gap-3 mx-auto w-full max-w-none sm:max-w-2xl lg:max-w-4xl xl:max-w-6xl hide-scrollbar"
+        className="flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 flex flex-col gap-3 mx-auto w-full max-w-none sm:max-w-4xl lg:max-w-7xl xl:max-w-none hide-scrollbar"
       >
         {loading ? (
           <p className="text-gray-400">Loading notes...</p>
@@ -520,7 +520,7 @@ export default function HomePage() {
       {showScrollButton && (
         <button
           onClick={scrollToBottom}
-          className="fixed z-30 bg-blue-600 text-white px-4 py-2 rounded shadow-lg hover:bg-blue-700 transition top-14 right-3 sm:right-6 lg:right-8 xl:right-[calc((100vw-1536px)/2+2rem)]"
+          className="fixed z-30 bg-blue-600 text-white px-4 py-2 rounded shadow-lg hover:bg-blue-700 transition top-14 right-3 sm:right-6 lg:right-8"
           aria-label="Scroll to bottom"
           title="Scroll to bottom"
         >
@@ -529,7 +529,7 @@ export default function HomePage() {
       )}
 
       {/* Input area wrapper */}
-      <div ref={inputWrapperRef} className="mx-auto w-full max-w-none sm:max-w-2xl lg:max-w-4xl xl:max-w-6xl">
+      <div ref={inputWrapperRef} className="mx-auto w-full max-w-none sm:max-w-4xl lg:max-w-7xl xl:max-w-none">
         <NoteInput
           editingNote={editingNote || editingTimeNote}
           onEditDone={handleEditDone}
