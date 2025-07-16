@@ -270,11 +270,11 @@ const NoteBubble = memo(function NoteBubble({
                           setDownloadTarget(item)
                           setDownloadModalOpen(true)
                         }}
-                        className="text-green-400 bg-black/60 rounded-full p-1 hover:bg-black/90"
+                        className="w-6 h-6 flex items-center justify-center bg-green-600 hover:bg-green-500 rounded text-white transition-colors"
                         title="Download"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
                         </svg>
                       </button>
                       <button
@@ -283,11 +283,11 @@ const NoteBubble = memo(function NoteBubble({
                           setDeleteTarget(item)
                           setDeleteModalOpen(true)
                         }}
-                        className="text-red-500 bg-black/60 rounded-full p-1 hover:bg-black/90"
+                        className="w-6 h-6 flex items-center justify-center bg-red-600 hover:bg-red-500 rounded text-white transition-colors"
                         title="Delete"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
                     </div>
@@ -401,10 +401,13 @@ const NoteBubble = memo(function NoteBubble({
           setDownloadTarget(bubble.contents[0])
           setDownloadModalOpen(true)
         }}
-        className="text-green-400 hover:underline text-xs"
+        className="w-6 h-6 flex items-center justify-center bg-green-600 hover:bg-green-500 rounded text-white transition-colors"
         disabled={selectMode}
+        title="Download"
       >
-        Download
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+        </svg>
       </button>
     )}
     {/* Edit Time untuk countdown bubble */}
@@ -412,9 +415,12 @@ const NoteBubble = memo(function NoteBubble({
       <button
         onClick={() => onRequestEditTime && onRequestEditTime(bubble)}
         disabled={!onRequestEditTime || selectMode}
-        className="text-blue-400 hover:underline text-xs disabled:opacity-50"
+        className="w-6 h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-500 rounded text-white disabled:opacity-50 transition-colors"
+        title="Edit Time"
       >
-        Edit Time
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
       </button>
     )}
     {/* Edit button hanya untuk non-countdown bubble */}
@@ -422,9 +428,12 @@ const NoteBubble = memo(function NoteBubble({
       <button
         onClick={() => onRequestEdit && onRequestEdit(bubble)}
         disabled={!onRequestEdit || selectMode}
-        className="text-blue-400 hover:underline text-xs disabled:opacity-50"
+        className="w-6 h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-500 rounded text-white disabled:opacity-50 transition-colors"
+        title="Edit"
       >
-        Edit
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
       </button>
     )}
     
@@ -434,18 +443,22 @@ const NoteBubble = memo(function NoteBubble({
         <button
           onClick={() => onMoveUp && onMoveUp(bubble)}
           disabled={isFirst || !onMoveUp}
-          className="text-green-400 hover:underline text-xs disabled:opacity-30"
+          className="w-6 h-6 flex items-center justify-center bg-purple-600 hover:bg-purple-500 rounded text-white disabled:opacity-30 transition-colors"
           title="Move up"
         >
-          ↑
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          </svg>
         </button>
         <button
           onClick={() => onMoveDown && onMoveDown(bubble)}
           disabled={isLast || !onMoveDown}
-          className="text-green-400 hover:underline text-xs disabled:opacity-30"
+          className="w-6 h-6 flex items-center justify-center bg-purple-600 hover:bg-purple-500 rounded text-white disabled:opacity-30 transition-colors"
           title="Move down"
         >
-          ↓
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
         </button>
       </>
     )}
@@ -453,9 +466,12 @@ const NoteBubble = memo(function NoteBubble({
     <button
       onClick={() => onRequestDelete && onRequestDelete(bubble)}
       disabled={!onRequestDelete || selectMode}
-      className="text-red-400 hover:underline text-xs disabled:opacity-50"
+      className="w-6 h-6 flex items-center justify-center bg-red-600 hover:bg-red-500 rounded text-white disabled:opacity-50 transition-colors"
+      title="Delete"
     >
-      Delete
+      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
     </button>
   </div>
 </div>
