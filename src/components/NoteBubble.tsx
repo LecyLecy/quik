@@ -210,13 +210,21 @@ const NoteBubble = memo(function NoteBubble({
     setTimeout(() => setCopyFeedback(''), 2000)
   }, [bubble.description])
 
+  // Check if bubble contains documents
+  const hasDocuments = useMemo(() => 
+    bubble.contents.some(item => item.type === 'document'), 
+    [bubble.contents]
+  )
+
   return (
     <>
 <div
   className={`
-    rounded-xl p-3 sm:p-4 mb-3 shadow-sm w-full 
-    max-w-full overflow-hidden
+    rounded-xl p-3 sm:p-4 mb-3 shadow-sm 
+    inline-block max-w-full overflow-hidden
+    w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl
     relative transition-all duration-200 
+    ${hasDocuments ? 'min-w-[300px] sm:min-w-[350px]' : 'min-w-0'}
     ${isEditing ? 'bg-[#004d40] border border-teal-400' : 'bg-[#1e1e1e]'} text-white
     ${selectMode && selected ? 'outline outline-2 outline-green-500' : ''}
   `}
@@ -285,11 +293,14 @@ const NoteBubble = memo(function NoteBubble({
         {/* Media contents */}
         {!bubble.isCountdown && bubble.contents.length > 0 && (
           <div className={`grid gap-1 sm:gap-2 mt-3 ${
-            isMobile 
-              ? 'grid-cols-2' 
-              : isTablet 
-                ? 'grid-cols-3' 
-                : 'grid-cols-4'
+            // Dynamic grid columns based on actual content count
+            bubble.contents.length === 1 
+              ? 'grid-cols-1 max-w-fit'
+              : isMobile 
+                ? 'grid-cols-2' 
+                : isTablet 
+                  ? 'grid-cols-3' 
+                  : 'grid-cols-4'
           }`}>
             {visibleItems.map((item, index) => {
               const isLastVisible = index === visibleItems.length - 1 && extraCount > 0
@@ -304,7 +315,7 @@ const NoteBubble = memo(function NoteBubble({
                 <div
                   key={item.id}
                   onClick={handleThisMediaClick}
-                  className="relative bg-[#2c2c2c] rounded cursor-pointer overflow-hidden aspect-square hover:scale-105 transition-transform duration-150"
+                  className="relative bg-[#2c2c2c] rounded cursor-pointer overflow-hidden aspect-square hover:scale-105 transition-transform duration-150 max-h-[200px]"
                 >
                   {/* Icon download & delete untuk multi konten */}
                   {bubble.contents.length > 1 && !isLastVisible && (

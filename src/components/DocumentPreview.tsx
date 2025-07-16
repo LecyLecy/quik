@@ -41,21 +41,21 @@ const DocumentPreview = memo(function DocumentPreview({
   const displayFileName = truncateFileName(fileName, maxFileNameLength)
 
   return (
-    <div className={`flex flex-col justify-center items-center h-full w-full text-white ${className}`}>
+    <div className={`flex flex-col justify-center items-center h-full w-full min-h-[120px] aspect-square text-white ${className}`}>
       {/* Document Icon */}
-      <div className={`${compact ? 'text-5xl mb-2' : 'text-3xl mb-1'} opacity-80`}>
+      <div className={`${compact ? 'text-4xl mb-1' : 'text-3xl mb-1'} opacity-80`}>
         📄
       </div>
       
       {/* File Extension Badge */}
-      <div className={`${compact ? 'mb-2' : 'mb-1'}`}>
+      <div className={`${compact ? 'mb-1' : 'mb-1'}`}>
         <span className={`inline-block bg-blue-600 text-white font-semibold rounded px-2 py-1 uppercase ${compact ? 'text-xs' : 'text-[9px]'}`}>
           {getFileExtension()}
         </span>
       </div>
       
       {/* File Name */}
-      <p className={`text-center px-1 ${compact ? 'text-sm mb-1' : 'text-[10px] mb-0.5'} leading-tight`}>
+      <p className={`text-center px-1 ${compact ? 'text-xs mb-1 h-8' : 'text-[10px] mb-0.5 h-6'} leading-tight flex items-center justify-center`}>
         {displayFileName}
       </p>
       
