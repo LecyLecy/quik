@@ -75,6 +75,7 @@ const NoteBubble = memo(function NoteBubble({
 }: NoteBubbleProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [countdownText, setCountdownText] = useState('')
+  const [copyFeedback, setCopyFeedback] = useState('')
   
   // Keep existing state for now, gradually migrate
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -212,6 +213,13 @@ const NoteBubble = memo(function NoteBubble({
                 {isExpanded ? 'Show less' : 'Show more'}
               </button>
             )}
+          </div>
+        )}
+
+        {/* Copy feedback */}
+        {copyFeedback && (
+          <div className="mb-2 text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded">
+            {copyFeedback}
           </div>
         )}
 
@@ -443,7 +451,20 @@ const NoteBubble = memo(function NoteBubble({
         onClick={async () => {
           try {
             await navigator.clipboard.writeText(bubble.description || '')
-            // You could add a toast notification here if desired
+            
+            // Create feedback message
+            const description = bubble.description || ''
+            const truncatedDesc = description.length > 30 
+              ? description.substring(0, 30) + '...' 
+              : description
+            
+            setCopyFeedback(`"${truncatedDesc}" copied`)
+            
+            // Clear feedback after 2 seconds
+            setTimeout(() => {
+              setCopyFeedback('')
+            }, 2000)
+            
           } catch (error) {
             console.error('Failed to copy to clipboard:', error)
             // Fallback for older browsers
@@ -453,6 +474,17 @@ const NoteBubble = memo(function NoteBubble({
             textArea.select()
             document.execCommand('copy')
             document.body.removeChild(textArea)
+            
+            // Show feedback for fallback too
+            const description = bubble.description || ''
+            const truncatedDesc = description.length > 30 
+              ? description.substring(0, 30) + '...' 
+              : description
+            
+            setCopyFeedback(`"${truncatedDesc}" copied`)
+            setTimeout(() => {
+              setCopyFeedback('')
+            }, 2000)
           }
         }}
         className="w-6 h-6 flex items-center justify-center bg-gray-600 hover:bg-gray-500 rounded text-white transition-colors"

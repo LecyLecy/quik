@@ -20,26 +20,6 @@ The app supports rich media previews, countdown notes, fullscreen modal previews
 - Disabled buttons & input validation (file naming, select mode)
 - Prevents any actions on a bubble in select mode
 
----
-
-# Current Progress
-
-**Features/Components Implemented:**
-
-- [X] Next.js app routing (App Router)
-- [X] Supabase integration (auth + storage)
-- [X] Typescript models (`NoteBubble`, `MediaItem`)
-- [X] Text note with clickable links (using `react-linkify`)
-- [X] Image, video, GIF, document upload with preview & modal
-- [X] Countdown note with datetime input and countdown timer
-- [X] Gallery modal for viewing all media if note has >4 contents
-- [X] Full media delete (updates UI & Supabase storage)
-- [X] Grid UI layout, mobile/desktop responsive
-- [X] Multi-select bubble (select, unselect, bulk delete, modal confirm)
-- [X] Scroll-to-bottom button & sticky header
-- [X] Download confirmation modal with file name input/validation
-- [X] All UI logic for disabling/enabling actions as needed
-
 **Integrations:**
 
 - Supabase (Database & Storage: `notes-media` bucket)
