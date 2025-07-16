@@ -434,10 +434,17 @@ const NoteBubble = memo(function NoteBubble({
   {/* Timestamp + Actions */}
   <div className="flex-1 flex justify-end items-center gap-2 text-xs text-gray-400">
     <span>
-      {new Date(bubble.createdAt).toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })}
+      {(() => {
+        const date = new Date(bubble.createdAt)
+        const day = date.getDate().toString().padStart(2, '0')
+        const month = date.toLocaleString('en-US', { month: 'short' })
+        const year = date.getFullYear().toString().slice(-2)
+        const time = date.toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+        return `${day} ${month} ${year} ${time}`
+      })()}
     </span>
     {/* Download untuk bubble satu konten */}
     {bubble.contents.length === 1 && (
