@@ -5,6 +5,8 @@ import { v4 as uuid } from 'uuid'
 import { saveNoteBubble, updateNoteBubble } from '@/hooks/useSaveNote'
 import type { NoteBubble, MediaItem } from '@/types/note'
 import { supabase } from '@/lib/supabase/client'
+import CustomTimePicker from './CustomTimePicker'
+import CustomDatePicker from './CustomDatePicker'
 
 interface NoteInputProps {
   onNoteSaved?: () => void
@@ -301,18 +303,16 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
       onDrop={handleDrop}
     >
       {(isCountdownMode || (editingNote && editingNote.isCountdown)) && (
-        <div className="flex gap-2 mb-2">
-          <input
-            type="date"
+        <div className="flex flex-col gap-2 mb-2">
+          <CustomDatePicker
             value={countdownDate}
-            onChange={(e) => setCountdownDate(e.target.value)}
-            className="bg-[#1e1e1e] text-white p-2 rounded w-1/2"
+            onChange={setCountdownDate}
+            className="w-full"
           />
-          <input
-            type="time"
+          <CustomTimePicker
             value={countdownTime}
-            onChange={(e) => setCountdownTime(e.target.value)}
-            className="bg-[#1e1e1e] text-white p-2 rounded w-1/2"
+            onChange={setCountdownTime}
+            className="w-full"
           />
         </div>
       )}
