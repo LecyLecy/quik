@@ -24,6 +24,10 @@ export default function HomePage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [showMultiDeleteModal, setShowMultiDeleteModal] = useState(false)
 
+  // ===== Search =====
+  const [searchMode, setSearchMode] = useState(false)
+  const [searchText, setSearchText] = useState('')
+
   // ===== Manual Refresh Handler =====
   const handleManualRefresh = async () => {
     // Check if user is at bottom before refresh
@@ -291,22 +295,61 @@ export default function HomePage() {
           <h1 className="text-xl font-semibold">Your Notes</h1>
         </div>
         {!selectMode ? (
-          <button
-            onClick={handleManualRefresh}
-            disabled={refreshing}
-            className="text-sm text-green-400 hover:bg-green-400/10 p-2 rounded disabled:opacity-50 transition-colors"
-            title="Refresh"
-          >
-            {refreshing ? (
-              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            {searchMode ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="Search notes..."
+                  className="bg-gray-800 text-white px-3 py-1 rounded border border-gray-600 focus:border-blue-400 focus:outline-none text-sm w-40"
+                  autoFocus
+                />
+                <button
+                  onClick={() => {
+                    setSearchMode(false)
+                    setSearchText('')
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                  title="Cancel search"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+              <button
+                onClick={() => setSearchMode(true)}
+                className="text-gray-400 hover:bg-gray-400/10 p-2 rounded transition-colors"
+                title="Search"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
             )}
-          </button>
+
+            {/* Refresh */}
+            <button
+              onClick={handleManualRefresh}
+              disabled={refreshing}
+              className="text-sm text-green-400 hover:bg-green-400/10 p-2 rounded disabled:opacity-50 transition-colors"
+              title="Refresh"
+            >
+              {refreshing ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
+            </button>
+          </div>
         ) : (
           <div className="flex gap-2">
             <button
