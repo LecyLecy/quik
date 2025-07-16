@@ -238,12 +238,9 @@ const NoteBubble = memo(function NoteBubble({
                 </a>
               )}
             >
-              {(() => {
-                const searchTerm = searchText?.trim() || '';
-                return searchTerm && highlightSearchText 
-                  ? highlightSearchText(displayText, searchTerm)
-                  : displayText;
-              })()}
+              {searchText && searchText.trim() && highlightSearchText ? 
+                highlightSearchText(displayText || '', searchText.trim()) : 
+                displayText}
             </Linkify>
             {shouldTruncate && (
               <button
