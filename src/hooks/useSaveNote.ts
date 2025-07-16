@@ -2,6 +2,9 @@ import { supabase } from '@/lib/supabase/client'
 import type { MediaItem } from '@/types/note'
 import type { NoteBubble } from '@/types/note'
 
+// Since you're the only user, we'll use a fixed user ID
+const FIXED_USER_ID = 'your-fixed-user-id-123'
+
 export async function saveNoteBubble(note: NoteBubble) {
   const { data, error } = await supabase
     .from('notes')
@@ -14,6 +17,7 @@ export async function saveNoteBubble(note: NoteBubble) {
         order: note.order ?? null,
         is_countdown: note.isCountdown ?? null,
         countdown_date: note.countdownDate ?? null,
+        // Removed user_id for now since column doesn't exist
       },
     ])
 
@@ -35,6 +39,7 @@ export async function updateNoteBubble(
     .from('notes')
     .update(updateObj)
     .eq('id', id)
+    // Removed user_id check for now
 
   if (error) throw error
 }
@@ -48,7 +53,12 @@ export async function deleteNoteBubble(note: NoteBubble) {
     if (error) console.error('Failed to delete files:', error)
   }
 
-  const { error } = await supabase.from('notes').delete().eq('id', note.id)
+  const { error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('id', note.id)
+    // Removed user_id check for now
+  
   if (error) throw error
 }
 
@@ -57,6 +67,7 @@ export async function updateNoteOrder(noteId: string, newOrder: number) {
     .from('notes')
     .update({ order: newOrder })
     .eq('id', noteId)
+    // Removed user_id check for now
 
   if (error) throw error
 }
