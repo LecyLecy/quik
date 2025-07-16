@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNotes } from '@/hooks/useNotes'
+import { useDebounce } from '@/hooks/useDebounce'
 import NoteItem from '@/components/NoteBubble'
 import NoteInput from '@/components/NoteInput'
 import type { NoteBubble } from '@/types/note'
@@ -29,7 +30,7 @@ export default function HomePage() {
   const [searchText, setSearchText] = useState('')
 
   // ===== Manual Refresh Handler =====
-  const handleManualRefresh = async () => {
+  const handleManualRefresh = useCallback(async () => {
     // Check if user is at bottom before refresh
     const isAtBottom = scrollContainerRef.current ? 
       (scrollContainerRef.current.scrollHeight - scrollContainerRef.current.scrollTop - scrollContainerRef.current.clientHeight < 50) : true
@@ -38,10 +39,10 @@ export default function HomePage() {
     setRefreshing(true)
     await refetch()
     setRefreshing(false)
-  }
+  }, [refetch])
 
   // ===== Multi Delete Handler =====
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = useCallback(async () => {
     if (selectedIds.length === 0) return
     try {
       setDeleting(true)
@@ -66,9 +67,9 @@ export default function HomePage() {
       setDeleting(false)
       setShowMultiDeleteModal(false)
     }
-  }
+  }, [selectedIds, notes, refetch, setNotes])
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!pendingDelete) return
     try {
       setDeleting(true)
@@ -85,13 +86,13 @@ export default function HomePage() {
       setDeleting(false)
       setPendingDelete(null)
     }
-  }
+  }, [pendingDelete, refetch, setNotes])
 
-  const handleEditDone = async () => {
+  const handleEditDone = useCallback(() => {
     setEditingNote(null)
     setEditingTimeNote(null)
     // No auto-refresh - changes should be handled optimistically by NoteInput
-  }
+  }, [])
 
   useEffect(() => {
     const updateOffset = () => {
@@ -140,7 +141,7 @@ export default function HomePage() {
   }, [])
 
   // ===== Optimistic Note Addition =====
-  const handleOptimisticAdd = (newNote: NoteBubble) => {
+  const handleOptimisticAdd = useCallback((newNote: NoteBubble) => {
     setNotes((prev) => [...prev, newNote])
     // Auto-scroll to bottom for new messages
     setTimeout(() => {
@@ -148,22 +149,35 @@ export default function HomePage() {
         scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
       }
     }, 100)
-  }
+  }, [])
 
   // ===== Optimistic Note Edit =====
-  const handleOptimisticEdit = (editedNote: NoteBubble) => {
+  const handleOptimisticEdit = useCallback((editedNote: NoteBubble) => {
     setNotes((prev) => prev.map(note => 
       note.id === editedNote.id ? editedNote : note
     ))
-  }
+  }, [])
 
   // ===== Note Saved Handler (no auto-refresh) =====
-  const handleNoteSaved = () => {
+  const handleNoteSaved = useCallback(() => {
     // Note is already added optimistically, no need to refresh
-  }
+  }, [])
+
+  // ===== Search Filter =====
+  const debouncedSearchText = useDebounce(searchText, 300)
+  const filteredNotes = useMemo(() => {
+    if (!debouncedSearchText.trim()) return notes
+    
+    return notes.filter(note => 
+      note.description?.toLowerCase().includes(debouncedSearchText.toLowerCase()) ||
+      note.contents.some(content => 
+        content.fileName?.toLowerCase().includes(debouncedSearchText.toLowerCase())
+      )
+    )
+  }, [notes, debouncedSearchText])
 
   // ===== Note Reordering Handlers =====
-  const handleMoveUp = async (bubble: NoteBubble) => {
+  const handleMoveUp = useCallback(async (bubble: NoteBubble) => {
     const currentIndex = notes.findIndex(n => n.id === bubble.id)
     if (currentIndex <= 0) return // Already at top
 
@@ -208,9 +222,9 @@ export default function HomePage() {
         aboveElement?.classList.remove('animate-swap-down')
       }
     }, 150)
-  }
+  }, [notes, setNotes])
 
-  const handleMoveDown = async (bubble: NoteBubble) => {
+  const handleMoveDown = useCallback(async (bubble: NoteBubble) => {
     const currentIndex = notes.findIndex(n => n.id === bubble.id)
     if (currentIndex >= notes.length - 1) return // Already at bottom
 
@@ -255,22 +269,24 @@ export default function HomePage() {
         belowElement?.classList.remove('animate-swap-up')
       }
     }, 150)
-  }
-  const scrollToBottom = () => {
+  }, [notes, setNotes])
+  
+  const scrollToBottom = useCallback(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
     }
-  }
+  }, [])
 
   // ===== Bubble Select Handler =====
-  const handleBubbleLongPress = (id: string) => {
+  const handleBubbleLongPress = useCallback((id: string) => {
     if (!selectMode) {
       if (editingNote) setEditingNote(null)
       setSelectMode(true)
       setSelectedIds([id])
     }
-  }
-  const handleBubbleSelectToggle = (id: string) => {
+  }, [selectMode, editingNote])
+  
+  const handleBubbleSelectToggle = useCallback((id: string) => {
     if (!selectMode) return
     if (editingNote) setEditingNote(null)
     setSelectedIds((prev) =>
@@ -278,12 +294,12 @@ export default function HomePage() {
         ? prev.filter((sid) => sid !== id)
         : [...prev, id]
     )
-  }
+  }, [selectMode, editingNote])
 
-  const handleCancelSelectMode = () => {
+  const handleCancelSelectMode = useCallback(() => {
     setSelectMode(false)
     setSelectedIds([])
-  }
+  }, [])
 
   // ===== UI =====
   return (
@@ -380,11 +396,12 @@ export default function HomePage() {
       >
         {loading ? (
           <p className="text-gray-400">Loading notes...</p>
-        ) : notes.length === 0 ? (
-          <p className="text-gray-500">No notes yet.</p>
+        ) : filteredNotes.length === 0 ? (
+          <p className="text-gray-500">{searchText ? 'No notes found.' : 'No notes yet.'}</p>
         ) : (
-          notes.map((bubble, index) => {
+          filteredNotes.map((bubble, index) => {
             const selected = selectMode && selectedIds.includes(bubble.id)
+            const originalIndex = notes.findIndex(n => n.id === bubble.id)
             return (
               <div
                 key={bubble.id}
@@ -412,10 +429,10 @@ export default function HomePage() {
                   onRequestEdit={!selectMode ? () => setEditingNote(bubble) : undefined}
                   onRequestEditTime={!selectMode ? () => setEditingTimeNote(bubble) : undefined}
                   onOptimisticEdit={handleOptimisticEdit}
-                  onMoveUp={!selectMode ? handleMoveUp : undefined}
-                  onMoveDown={!selectMode ? handleMoveDown : undefined}
-                  isFirst={index === 0}
-                  isLast={index === notes.length - 1}
+                  onMoveUp={!selectMode && !searchText ? handleMoveUp : undefined}
+                  onMoveDown={!selectMode && !searchText ? handleMoveDown : undefined}
+                  isFirst={originalIndex === 0}
+                  isLast={originalIndex === notes.length - 1}
                   isEditing={editingNote?.id === bubble.id || editingTimeNote?.id === bubble.id}
                   selectMode={selectMode}
                   selected={selected}

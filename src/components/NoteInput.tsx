@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef, useState, useEffect, forwardRef } from 'react'
+import React, { useRef, useState, useEffect, forwardRef, useCallback } from 'react'
 import { v4 as uuid } from 'uuid'
 import { saveNoteBubble, updateNoteBubble } from '@/hooks/useSaveNote'
 import type { NoteBubble, MediaItem } from '@/types/note'
@@ -65,7 +65,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
     }
   }, [editingNote])
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = useCallback(async (file: File) => {
     const fileId = uuid()
     const fileExt = file.name.split('.').pop()
     const filePath = `${fileId}.${fileExt}`
@@ -100,9 +100,9 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
     }
 
     return media
-  }
+  }, [])
 
-  const handlePaste = async (e: React.ClipboardEvent) => {
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
     const items = Array.from(e.clipboardData.items)
     
     for (const item of items) {
@@ -126,19 +126,19 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
         break // Only handle the first image found
       }
     }
-  }
+  }, [uploadFile])
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragOver(true)
-  }
+  }, [])
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragOver(false)
-  }
+  }, [])
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
@@ -156,7 +156,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
     }
   }
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
@@ -165,9 +165,9 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
     if (media) {
       setNewUploads((prev) => [...prev, media])
     }
-  }
+  }, [uploadFile])
 
-  const handleRemoveUpload = async (id: string) => {
+  const handleRemoveUpload = useCallback(async (id: string) => {
     const fileToRemoveNew = newUploads.find((item) => item.id === id)
     if (fileToRemoveNew) {
       const { error } = await supabase.storage
@@ -184,9 +184,9 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
     }
 
     setExistingUploads((prev) => prev.filter((item) => item.id !== id))
-  }
+  }, [newUploads])
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     // Allow send if there's description OR if there are files to upload
     const hasContent = description.trim() || existingUploads.length > 0 || newUploads.length > 0
     if (!hasContent) return
@@ -282,7 +282,10 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
         setLoading(false)
       }
     }
-  }
+  }, [
+    description, existingUploads, newUploads, isCountdownMode, countdownDate, countdownTime,
+    editingNote, onOptimisticEdit, onEditDone, onOptimisticAdd, onNoteSaved, currentNotes
+  ])
 
   // Cek apakah sedang edit bubble default (bukan countdown)
 

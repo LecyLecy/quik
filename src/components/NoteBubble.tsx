@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, memo, useCallback } from 'react'
+import { useState, useEffect, memo, useCallback, useMemo } from 'react'
 import type { NoteBubble as NoteBubbleType, MediaItem } from '@/types/note'
 import MediaModal from '@/components/MediaModal'
 import GalleryModal from '@/components/GalleryModal'
@@ -89,6 +89,43 @@ const NoteBubble = memo(function NoteBubble({
   // Use window width hook
   const { isMobile, isTablet } = useWindowWidth()
 
+  // Memoize expensive calculations
+  const gridCols = useMemo(() => isMobile ? 2 : isTablet ? 3 : 4, [isMobile, isTablet])
+  
+  const calculatePreviewLimit = useCallback(() => {
+    const totalItems = bubble.contents.length
+    
+    // If we have very few items, show all
+    if (totalItems <= gridCols) {
+      return totalItems
+    }
+    
+    // Calculate maximum items we can show in 2 rows
+    const maxItemsIn2Rows = gridCols * 2
+    
+    // If total items fit exactly in 1-2 rows, show all
+    if (totalItems <= maxItemsIn2Rows) {
+      return totalItems
+    }
+    
+    // If we have more than 2 rows worth, show full 2 rows
+    // The "+X" overlay will appear over the last visible item
+    return maxItemsIn2Rows
+  }, [bubble.contents.length, gridCols])
+
+  const previewLimit = useMemo(() => calculatePreviewLimit(), [calculatePreviewLimit])
+  const visibleItems = useMemo(() => bubble.contents.slice(0, previewLimit), [bubble.contents, previewLimit])
+  const extraCount = useMemo(() => bubble.contents.length - visibleItems.length, [bubble.contents.length, visibleItems.length])
+
+  const { shouldTruncate, displayText } = useMemo(() => {
+    const truncate = bubble.description && bubble.description.length > 200
+    const text = isExpanded || !truncate
+      ? bubble.description
+      : bubble.description?.slice(0, 200) + '...'
+    return { shouldTruncate: truncate, displayText: text }
+  }, [bubble.description, isExpanded])
+
+  // Optimized event listeners
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -112,41 +149,6 @@ const NoteBubble = memo(function NoteBubble({
       return () => clearInterval(interval)
     }
   }, [bubble.isCountdown, bubble.countdownDate])
-
-  // Calculate grid columns based on screen size
-  const gridCols = isMobile ? 2 : isTablet ? 3 : 4
-  
-  // Calculate how many items to show to fill the grid efficiently
-  const calculatePreviewLimit = () => {
-    const totalItems = bubble.contents.length
-    
-    // If we have very few items, show all
-    if (totalItems <= gridCols) {
-      return totalItems
-    }
-    
-    // Calculate maximum items we can show in 2 rows
-    const maxItemsIn2Rows = gridCols * 2
-    
-    // If total items fit exactly in 1-2 rows, show all
-    if (totalItems <= maxItemsIn2Rows) {
-      return totalItems
-    }
-    
-    // If we have more than 2 rows worth, show full 2 rows
-    // The "+X" overlay will appear over the last visible item
-    return maxItemsIn2Rows
-  }
-
-  const previewLimit = calculatePreviewLimit()
-  const visibleItems = bubble.contents.slice(0, previewLimit)
-  const extraCount = bubble.contents.length - visibleItems.length
-
-  const shouldTruncate = bubble.description && bubble.description.length > 200
-  const displayText =
-    isExpanded || !shouldTruncate
-      ? bubble.description
-      : bubble.description?.slice(0, 200) + '...'
 
   const handleMediaClick = useCallback((item: MediaItem) => {
     if (item.type === 'image' || item.type === 'gif' || item.type === 'video') {
@@ -174,6 +176,35 @@ const NoteBubble = memo(function NoteBubble({
       // Could revert optimistic update here if needed
     }
   }, [bubble, onOptimisticEdit])
+
+  // Optimize copy functionality
+  const handleCopy = useCallback(async () => {
+    if (!bubble.description) return
+    
+    try {
+      await navigator.clipboard.writeText(bubble.description)
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = bubble.description
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+    }
+    
+    // Create feedback message
+    const truncatedDesc = bubble.description.length > 30 
+      ? bubble.description.substring(0, 30) + '...' 
+      : bubble.description
+    
+    setCopyFeedback(`"${truncatedDesc}" copied`)
+    
+    // Clear feedback after 2 seconds
+    setTimeout(() => setCopyFeedback(''), 2000)
+  }, [bubble.description])
 
   return (
     <>
@@ -448,45 +479,7 @@ const NoteBubble = memo(function NoteBubble({
     {/* Copy description button */}
     {bubble.description && !selectMode && (
       <button
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(bubble.description || '')
-            
-            // Create feedback message
-            const description = bubble.description || ''
-            const truncatedDesc = description.length > 30 
-              ? description.substring(0, 30) + '...' 
-              : description
-            
-            setCopyFeedback(`"${truncatedDesc}" copied`)
-            
-            // Clear feedback after 2 seconds
-            setTimeout(() => {
-              setCopyFeedback('')
-            }, 2000)
-            
-          } catch (error) {
-            console.error('Failed to copy to clipboard:', error)
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea')
-            textArea.value = bubble.description || ''
-            document.body.appendChild(textArea)
-            textArea.select()
-            document.execCommand('copy')
-            document.body.removeChild(textArea)
-            
-            // Show feedback for fallback too
-            const description = bubble.description || ''
-            const truncatedDesc = description.length > 30 
-              ? description.substring(0, 30) + '...' 
-              : description
-            
-            setCopyFeedback(`"${truncatedDesc}" copied`)
-            setTimeout(() => {
-              setCopyFeedback('')
-            }, 2000)
-          }
-        }}
+        onClick={handleCopy}
         className="w-6 h-6 flex items-center justify-center bg-gray-600 hover:bg-gray-500 rounded text-white transition-colors"
         title="Copy description"
       >
