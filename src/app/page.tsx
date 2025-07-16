@@ -16,89 +16,77 @@ export default function HomePage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const inputWrapperRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [wasAtBottom, setWasAtBottom] = useState(true) // Track if user was at bottom before refresh
 
   // ===== Multi Select Bubble =====
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [showMultiDeleteModal, setShowMultiDeleteModal] = useState(false)
 
-  // Track id note terakhir
-  const prevLastId = useRef<string | null>(null)
+  // ===== Manual Refresh Handler =====
+  const handleManualRefresh = async () => {
+    // Check if user is at bottom before refresh
+    const isAtBottom = scrollContainerRef.current ? 
+      (scrollContainerRef.current.scrollHeight - scrollContainerRef.current.scrollTop - scrollContainerRef.current.clientHeight < 50) : true
+    
+    setWasAtBottom(isAtBottom)
+    setRefreshing(true)
+    await refetch()
+    setRefreshing(false)
+  }
 
   // ===== Multi Delete Handler =====
   const handleDeleteSelected = async () => {
     if (selectedIds.length === 0) return
     try {
       setDeleting(true)
+      // Optimistic update - remove from UI immediately
+      setNotes((prev) => prev.filter((n) => !selectedIds.includes(n.id)))
+      setSelectedIds([])
+      setSelectMode(false)
+      
+      // Then delete from database
       await Promise.all(
         selectedIds.map(async (id) => {
           const bubble = notes.find(n => n.id === id)
           if (bubble) await deleteNoteBubble(bubble)
         })
       )
-      setNotes((prev) => prev.filter((n) => !selectedIds.includes(n.id)))
-      setSelectedIds([])
-      setSelectMode(false)
-    } catch {
+    } catch (error) {
+      console.error('Failed to delete selected notes:', error)
+      // Revert optimistic update on error
+      await refetch()
       alert('Failed to delete selected notes!')
     } finally {
       setDeleting(false)
       setShowMultiDeleteModal(false)
-      setTimeout(() => {
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
-        }
-      }, 150)
     }
   }
-
-  // ===== Scroll fix: always scroll to bottom after notes update =====
-  useEffect(() => {
-    // Bandingkan id note terakhir sebelum dan sesudah update
-    const lastId = notes.length ? notes[notes.length - 1].id : null
-    if (
-      scrollContainerRef.current &&
-      lastId !== prevLastId.current
-    ) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
-          }
-        })
-      })
-    }
-    prevLastId.current = lastId
-  }, [notes])
 
   const handleDelete = async () => {
     if (!pendingDelete) return
     try {
       setDeleting(true)
-      await deleteNoteBubble(pendingDelete)
+      // Optimistic update - remove from UI immediately
       setNotes((prev) => prev.filter((n) => n.id !== pendingDelete.id))
+      
+      // Then delete from database
+      await deleteNoteBubble(pendingDelete)
     } catch (err) {
       console.error('❌ Failed to delete note:', err)
+      // Revert optimistic update on error
+      await refetch()
     } finally {
       setDeleting(false)
       setPendingDelete(null)
-      setTimeout(() => {
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
-        }
-      }, 120)
     }
   }
 
   const handleEditDone = async () => {
     setEditingNote(null)
     setEditingTimeNote(null)
-    await refetch()
-    setTimeout(() => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
-      }
-    }, 150)
+    // No auto-refresh - changes should be handled optimistically by NoteInput
   }
 
   useEffect(() => {
@@ -109,6 +97,32 @@ export default function HomePage() {
     window.addEventListener('resize', updateOffset)
     return () => window.removeEventListener('resize', updateOffset)
   }, [])
+
+  // Auto-scroll to bottom after refresh (if user was at bottom) or new messages
+  useEffect(() => {
+    if (!scrollContainerRef.current) return
+    
+    // If refreshing finished and user was at bottom, scroll to bottom
+    if (!refreshing && wasAtBottom) {
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+        }
+      })
+    }
+  }, [notes, refreshing, wasAtBottom])
+
+  // Initial scroll to bottom when notes first load
+  useEffect(() => {
+    if (!loading && notes.length > 0 && scrollContainerRef.current) {
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+        }
+      })
+    }
+  }, [loading])
+
   useEffect(() => {
     const onScroll = () => {
       if (!scrollContainerRef.current) return
@@ -121,14 +135,28 @@ export default function HomePage() {
     return () => container?.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Listen for content deletion events from NoteBubble
-  useEffect(() => {
-    const handleContentDeleted = () => {
-      refetch() // Refresh the notes when content is deleted
-    }
-    window.addEventListener('noteContentDeleted', handleContentDeleted)
-    return () => window.removeEventListener('noteContentDeleted', handleContentDeleted)
-  }, [refetch])
+  // ===== Optimistic Note Addition =====
+  const handleOptimisticAdd = (newNote: NoteBubble) => {
+    setNotes((prev) => [...prev, newNote])
+    // Auto-scroll to bottom for new messages
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+      }
+    }, 100)
+  }
+
+  // ===== Optimistic Note Edit =====
+  const handleOptimisticEdit = (editedNote: NoteBubble) => {
+    setNotes((prev) => prev.map(note => 
+      note.id === editedNote.id ? editedNote : note
+    ))
+  }
+
+  // ===== Note Saved Handler (no auto-refresh) =====
+  const handleNoteSaved = () => {
+    // Note is already added optimistically, no need to refresh
+  }
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
@@ -156,11 +184,6 @@ export default function HomePage() {
   const handleCancelSelectMode = () => {
     setSelectMode(false)
     setSelectedIds([])
-    setTimeout(() => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
-      }
-    }, 120)
   }
 
   // ===== UI =====
@@ -174,17 +197,11 @@ export default function HomePage() {
         </div>
         {!selectMode ? (
           <button
-            onClick={async () => {
-              await refetch()
-              setTimeout(() => {
-                if (scrollContainerRef.current) {
-                  scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
-                }
-              }, 120)
-            }}
-            className="text-sm text-blue-400 hover:underline"
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            className="text-sm text-blue-400 hover:underline disabled:opacity-50"
           >
-            Refresh
+            {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
         ) : (
           <div className="flex gap-2">
@@ -246,6 +263,7 @@ export default function HomePage() {
                   onRequestDelete={!selectMode ? () => setPendingDelete(bubble) : undefined}
                   onRequestEdit={!selectMode ? () => setEditingNote(bubble) : undefined}
                   onRequestEditTime={!selectMode ? () => setEditingTimeNote(bubble) : undefined}
+                  onOptimisticEdit={handleOptimisticEdit}
                   isEditing={editingNote?.id === bubble.id || editingTimeNote?.id === bubble.id}
                   selectMode={selectMode}
                   selected={selected}
@@ -277,8 +295,9 @@ export default function HomePage() {
             setEditingNote(null)
             setEditingTimeNote(null)
           }}
-          onNoteSaved={handleEditDone} // <- trigger scroll setelah refetch
-          onOptimisticAdd={(note) => setNotes((prev) => [...prev, note])}
+          onNoteSaved={handleNoteSaved}
+          onOptimisticAdd={handleOptimisticAdd}
+          onOptimisticEdit={handleOptimisticEdit}
         />
       </div>
 

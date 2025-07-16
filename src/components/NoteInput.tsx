@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase/client'
 interface NoteInputProps {
   onNoteSaved?: () => void
   onOptimisticAdd?: (note: NoteBubble) => void
+  onOptimisticEdit?: (note: NoteBubble) => void
   editingNote?: NoteBubble | null
   onEditDone?: () => void
   onEditCancelled?: () => void
@@ -17,6 +18,7 @@ interface NoteInputProps {
 const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput({
   onNoteSaved,
   onOptimisticAdd,
+  onOptimisticEdit,
   editingNote,
   onEditDone,
   onEditCancelled,
@@ -207,14 +209,25 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
           return
         }
 
-        // Jika edit bubble default, tambahkan newUploads ke contents
+        // Create optimistic update
         const isEditingDefault = !editingNote.isCountdown
         let updatedContents = existingUploads
         if (isEditingDefault && newUploads.length > 0) {
           updatedContents = [...existingUploads, ...newUploads]
         }
 
-        // Jika edit countdown bubble, kirim countdown date
+        const optimisticNote: NoteBubble = {
+          ...editingNote,
+          description,
+          contents: isEditingDefault ? updatedContents : editingNote.contents,
+          countdownDate: editingNote.isCountdown ? (fullCountdownISO || undefined) : editingNote.countdownDate,
+        }
+
+        // Apply optimistic update immediately
+        onOptimisticEdit?.(optimisticNote)
+        onEditDone?.()
+
+        // Then save to database
         const updateCountdownDate = editingNote.isCountdown ? fullCountdownISO || undefined : undefined
 
         await updateNoteBubble(
@@ -223,7 +236,6 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
           isEditingDefault ? updatedContents : undefined, // update contents hanya untuk default
           updateCountdownDate // update countdown date jika edit countdown
         )
-        onEditDone?.()
       } catch (err) {
         console.error('❌ Error updating note:', err)
       } finally {

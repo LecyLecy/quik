@@ -16,6 +16,7 @@ interface NoteBubbleProps {
   onRequestDelete?: (bubble: NoteBubbleType) => void
   onRequestEdit?: (bubble: NoteBubbleType) => void
   onRequestEditTime?: (bubble: NoteBubbleType) => void
+  onOptimisticEdit?: (bubble: NoteBubbleType) => void
   isEditing?: boolean
   selectMode?: boolean
   selected?: boolean
@@ -58,7 +59,8 @@ const NoteBubble = memo(function NoteBubble({
   bubble, 
   onRequestDelete, 
   onRequestEdit, 
-  onRequestEditTime, 
+  onRequestEditTime,
+  onOptimisticEdit,
   isEditing, 
   selectMode = false, 
   selected = false 
@@ -144,18 +146,25 @@ const NoteBubble = memo(function NoteBubble({
     }
   }, [])
 
-  // Handler hapus konten (bubble dan storage) - optimized without page reload
+  // Handler hapus konten (bubble dan storage) - optimized with optimistic updates
   const handleDeleteContent = useCallback(async (item: MediaItem) => {
     try {
-      await supabase.storage.from('notes-media').remove([item.storagePath])
       const newContents = bubble.contents.filter(i => i.id !== item.id)
-      await updateNoteBubble(bubble.id, bubble.description || '', newContents)
-      // Trigger re-fetch in parent component instead of page reload
-      window.dispatchEvent(new Event('noteContentDeleted'))
+      
+      // Optimistic update - update UI immediately
+      const updatedBubble = { ...bubble, contents: newContents }
+      onOptimisticEdit?.(updatedBubble)
+      
+      // Then update database and storage
+      await Promise.all([
+        supabase.storage.from('notes-media').remove([item.storagePath]),
+        updateNoteBubble(bubble.id, bubble.description || '', newContents)
+      ])
     } catch (error) {
       console.error('Error deleting content:', error)
+      // Could revert optimistic update here if needed
     }
-  }, [bubble.id, bubble.description, bubble.contents])
+  }, [bubble, onOptimisticEdit])
 
   return (
     <>
