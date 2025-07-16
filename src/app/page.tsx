@@ -28,6 +28,8 @@ export default function HomePage() {
   // ===== Search =====
   const [searchMode, setSearchMode] = useState(false)
   const [searchText, setSearchText] = useState('')
+  const [showSearchModal, setShowSearchModal] = useState(false)
+  const [scrollPositionBeforeSearch, setScrollPositionBeforeSearch] = useState(0)
 
   // ===== Manual Refresh Handler =====
   const handleManualRefresh = useCallback(async () => {
@@ -166,15 +168,41 @@ export default function HomePage() {
   // ===== Search Filter =====
   const debouncedSearchText = useDebounce(searchText, 300)
   const filteredNotes = useMemo(() => {
-    if (!debouncedSearchText.trim()) return notes
+    if (!searchText.trim()) return notes // Use immediate search text for instant results
     
     return notes.filter(note => 
-      note.description?.toLowerCase().includes(debouncedSearchText.toLowerCase()) ||
+      note.description?.toLowerCase().includes(searchText.toLowerCase()) ||
       note.contents.some(content => 
-        content.fileName?.toLowerCase().includes(debouncedSearchText.toLowerCase())
+        content.fileName?.toLowerCase().includes(searchText.toLowerCase())
       )
     )
-  }, [notes, debouncedSearchText])
+  }, [notes, searchText]) // Use immediate search text
+
+  // Show search modal when there are many results
+  const shouldShowModal = searchText.trim() && filteredNotes.length > 6
+  
+  // Auto-open modal when search has many results
+  useEffect(() => {
+    if (shouldShowModal && !showSearchModal) {
+      setShowSearchModal(true)
+    } else if (!shouldShowModal && showSearchModal) {
+      setShowSearchModal(false)
+    }
+  }, [shouldShowModal, showSearchModal])
+
+  // Helper function to highlight search terms
+  const highlightSearchText = useCallback((text: string, searchTerm: string) => {
+    if (!searchTerm || !text) return text
+    
+    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+    const parts = text.split(regex)
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? 
+        <mark key={index} className="bg-yellow-400 text-black px-1 rounded">{part}</mark> : 
+        part
+    )
+  }, [])
 
   // ===== Note Reordering Handlers =====
   const handleMoveUp = useCallback(async (bubble: NoteBubble) => {
@@ -277,6 +305,37 @@ export default function HomePage() {
     }
   }, [])
 
+  // ===== Search Close Handler =====
+  const handleSearchClose = useCallback(() => {
+    setSearchMode(false)
+    setSearchText('')
+    setShowSearchModal(false)
+    
+    // Restore scroll position after DOM updates
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) {
+          // Check if we were at the bottom before search
+          const wasAtBottom = scrollPositionBeforeSearch >= (scrollContainerRef.current.scrollHeight - scrollContainerRef.current.clientHeight - 50)
+          
+          if (wasAtBottom) {
+            // If user was at bottom, go to bottom
+            scrollToBottom()
+          } else {
+            // Otherwise try to restore previous position, but default to bottom if that fails
+            scrollContainerRef.current.scrollTop = scrollPositionBeforeSearch
+            // If the restored position doesn't look right, go to bottom
+            setTimeout(() => {
+              if (scrollContainerRef.current && scrollContainerRef.current.scrollTop < 100) {
+                scrollToBottom()
+              }
+            }, 50)
+          }
+        }
+      })
+    })
+  }, [scrollPositionBeforeSearch, scrollToBottom])
+
   // ===== Bubble Select Handler =====
   const handleBubbleLongPress = useCallback((id: string) => {
     if (!selectMode) {
@@ -323,11 +382,17 @@ export default function HomePage() {
                   className="bg-gray-800 text-white px-3 py-1 rounded border border-gray-600 focus:border-blue-400 focus:outline-none text-sm w-40"
                   autoFocus
                 />
+                {searchText && filteredNotes.length > 6 && (
+                  <button
+                    onClick={() => setShowSearchModal(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                    title="View all results"
+                  >
+                    {filteredNotes.length} results
+                  </button>
+                )}
                 <button
-                  onClick={() => {
-                    setSearchMode(false)
-                    setSearchText('')
-                  }}
+                  onClick={handleSearchClose}
                   className="text-gray-400 hover:text-white transition-colors"
                   title="Cancel search"
                 >
@@ -338,7 +403,13 @@ export default function HomePage() {
               </div>
             ) : (
               <button
-                onClick={() => setSearchMode(true)}
+                onClick={() => {
+                  // Store current scroll position before entering search mode
+                  if (scrollContainerRef.current) {
+                    setScrollPositionBeforeSearch(scrollContainerRef.current.scrollTop)
+                  }
+                  setSearchMode(true)
+                }}
                 className="text-gray-400 hover:bg-gray-400/10 p-2 rounded transition-colors"
                 title="Search"
               >
@@ -436,6 +507,8 @@ export default function HomePage() {
                   isEditing={editingNote?.id === bubble.id || editingTimeNote?.id === bubble.id}
                   selectMode={selectMode}
                   selected={selected}
+                  searchText={searchText}
+                  highlightSearchText={highlightSearchText}
                 />
               </div>
             )
@@ -551,6 +624,81 @@ export default function HomePage() {
               >
                 {deleting ? 'Deleting...' : 'Delete'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Results Modal */}
+      {showSearchModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#2c2c2c] rounded-lg w-full max-w-4xl max-h-[80vh] flex flex-col mx-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-600">
+              <h3 className="text-lg font-semibold text-white">
+                Search Results for "{searchText}" ({filteredNotes.length} found)
+              </h3>
+              <button
+                onClick={handleSearchClose}
+                className="text-gray-400 hover:text-white p-1"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Scrollable Results */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {filteredNotes.map((bubble) => (
+                <div
+                  key={bubble.id}
+                  className="bg-[#1e1e1e] rounded-lg p-4 hover:bg-[#252525] transition-colors cursor-pointer"
+                  onClick={() => {
+                    setShowSearchModal(false)
+                    // Scroll to the note in the main view
+                    const noteElement = document.querySelector(`[data-note-id="${bubble.id}"]`)
+                    if (noteElement) {
+                      noteElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      // Add a brief highlight effect
+                      noteElement.classList.add('ring-2', 'ring-blue-500')
+                      setTimeout(() => {
+                        noteElement.classList.remove('ring-2', 'ring-blue-500')
+                      }, 2000)
+                    }
+                  }}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="text-gray-400 text-sm">
+                      {new Date(bubble.createdAt).toLocaleString()}
+                    </div>
+                    {bubble.isCountdown && (
+                      <span className="bg-purple-600 text-white px-2 py-1 rounded text-xs">
+                        Countdown
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="text-white mb-2">
+                    {bubble.description || '(No description)'}
+                  </div>
+                  
+                  {bubble.contents.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {bubble.contents.map((content, idx) => (
+                        <div key={idx} className="bg-gray-700 px-2 py-1 rounded text-xs text-gray-300">
+                          {content.type === 'image' ? '🖼️' : '📁'} {content.fileName}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-gray-600 text-center text-gray-400 text-sm">
+              Click on any note to view it in the main list
             </div>
           </div>
         </div>

@@ -24,6 +24,8 @@ interface NoteBubbleProps {
   isEditing?: boolean
   selectMode?: boolean
   selected?: boolean
+  searchText?: string
+  highlightSearchText?: (text: string, searchTerm: string) => React.ReactNode
 }
 
 function formatCountdown(targetDate: Date) {
@@ -71,7 +73,9 @@ const NoteBubble = memo(function NoteBubble({
   isLast = false,
   isEditing, 
   selectMode = false, 
-  selected = false 
+  selected = false,
+  searchText,
+  highlightSearchText
 }: NoteBubbleProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [countdownText, setCountdownText] = useState('')
@@ -234,7 +238,12 @@ const NoteBubble = memo(function NoteBubble({
                 </a>
               )}
             >
-              {displayText}
+              {(() => {
+                const searchTerm = searchText?.trim() || '';
+                return searchTerm && highlightSearchText 
+                  ? highlightSearchText(displayText, searchTerm)
+                  : displayText;
+              })()}
             </Linkify>
             {shouldTruncate && (
               <button
