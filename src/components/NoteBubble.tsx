@@ -436,6 +436,33 @@ const NoteBubble = memo(function NoteBubble({
         </svg>
       </button>
     )}
+
+    {/* Copy description button */}
+    {bubble.description && !selectMode && (
+      <button
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(bubble.description || '')
+            // You could add a toast notification here if desired
+          } catch (error) {
+            console.error('Failed to copy to clipboard:', error)
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea')
+            textArea.value = bubble.description || ''
+            document.body.appendChild(textArea)
+            textArea.select()
+            document.execCommand('copy')
+            document.body.removeChild(textArea)
+          }
+        }}
+        className="w-6 h-6 flex items-center justify-center bg-gray-600 hover:bg-gray-500 rounded text-white transition-colors"
+        title="Copy description"
+      >
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      </button>
+    )}
     
     {/* Reorder buttons */}
     {!selectMode && (
