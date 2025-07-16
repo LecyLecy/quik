@@ -12,7 +12,8 @@ export function useNotes() {
       const { data, error } = await supabase
         .from('notes')
         .select('*')
-        .order('created_at', { ascending: true }) // ascending agar oldest dulu
+        .order('order', { ascending: true }) // Order by manual order first
+        .order('created_at', { ascending: true }) // Then by creation time as fallback
 
       if (error) throw error
       if (!data) return
@@ -22,6 +23,7 @@ export function useNotes() {
         description: note.description,
         contents: note.contents,
         createdAt: note.created_at,
+        order: note.order ?? null,
         isCountdown: note.is_countdown ?? false,
         countdownDate: note.countdown_date ?? null,
       }))

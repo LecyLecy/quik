@@ -5,7 +5,7 @@ import { useNotes } from '@/hooks/useNotes'
 import NoteItem from '@/components/NoteBubble'
 import NoteInput from '@/components/NoteInput'
 import type { NoteBubble } from '@/types/note'
-import { deleteNoteBubble } from '@/hooks/useSaveNote'
+import { deleteNoteBubble, swapNoteOrders } from '@/hooks/useSaveNote'
 
 export default function HomePage() {
   const { notes, loading, refetch, setNotes } = useNotes()
@@ -157,6 +157,101 @@ export default function HomePage() {
   const handleNoteSaved = () => {
     // Note is already added optimistically, no need to refresh
   }
+
+  // ===== Note Reordering Handlers =====
+  const handleMoveUp = async (bubble: NoteBubble) => {
+    const currentIndex = notes.findIndex(n => n.id === bubble.id)
+    if (currentIndex <= 0) return // Already at top
+
+    const bubbleAbove = notes[currentIndex - 1]
+    
+    // Add animation class before swapping
+    const currentElement = document.querySelector(`[data-note-id="${bubble.id}"]`)
+    const aboveElement = document.querySelector(`[data-note-id="${bubbleAbove.id}"]`)
+    
+    if (currentElement && aboveElement) {
+      currentElement.classList.add('animate-swap-up')
+      aboveElement.classList.add('animate-swap-down')
+    }
+
+    // Wait for animation to start
+    setTimeout(async () => {
+      try {
+        // Optimistic update - swap positions
+        const newNotes = [...notes]
+        const temp = newNotes[currentIndex]
+        newNotes[currentIndex] = newNotes[currentIndex - 1]
+        newNotes[currentIndex - 1] = temp
+        
+        // Assign proper order values
+        newNotes[currentIndex - 1] = { ...newNotes[currentIndex - 1], order: currentIndex - 1 }
+        newNotes[currentIndex] = { ...newNotes[currentIndex], order: currentIndex }
+        
+        setNotes(newNotes)
+
+        // Update database with new order values
+        await swapNoteOrders(bubble.id, currentIndex - 1, bubbleAbove.id, currentIndex)
+
+        // Remove animation classes
+        setTimeout(() => {
+          currentElement?.classList.remove('animate-swap-up')
+          aboveElement?.classList.remove('animate-swap-down')
+        }, 300)
+      } catch (error) {
+        console.error('Failed to reorder notes:', error)
+        // Remove animation classes on error
+        currentElement?.classList.remove('animate-swap-up')
+        aboveElement?.classList.remove('animate-swap-down')
+      }
+    }, 150)
+  }
+
+  const handleMoveDown = async (bubble: NoteBubble) => {
+    const currentIndex = notes.findIndex(n => n.id === bubble.id)
+    if (currentIndex >= notes.length - 1) return // Already at bottom
+
+    const bubbleBelow = notes[currentIndex + 1]
+    
+    // Add animation class before swapping
+    const currentElement = document.querySelector(`[data-note-id="${bubble.id}"]`)
+    const belowElement = document.querySelector(`[data-note-id="${bubbleBelow.id}"]`)
+    
+    if (currentElement && belowElement) {
+      currentElement.classList.add('animate-swap-down')
+      belowElement.classList.add('animate-swap-up')
+    }
+
+    // Wait for animation to start
+    setTimeout(async () => {
+      try {
+        // Optimistic update - swap positions
+        const newNotes = [...notes]
+        const temp = newNotes[currentIndex]
+        newNotes[currentIndex] = newNotes[currentIndex + 1]
+        newNotes[currentIndex + 1] = temp
+        
+        // Assign proper order values
+        newNotes[currentIndex] = { ...newNotes[currentIndex], order: currentIndex }
+        newNotes[currentIndex + 1] = { ...newNotes[currentIndex + 1], order: currentIndex + 1 }
+        
+        setNotes(newNotes)
+
+        // Update database with new order values
+        await swapNoteOrders(bubble.id, currentIndex + 1, bubbleBelow.id, currentIndex)
+
+        // Remove animation classes
+        setTimeout(() => {
+          currentElement?.classList.remove('animate-swap-down')
+          belowElement?.classList.remove('animate-swap-up')
+        }, 300)
+      } catch (error) {
+        console.error('Failed to reorder notes:', error)
+        // Remove animation classes on error
+        currentElement?.classList.remove('animate-swap-down')
+        belowElement?.classList.remove('animate-swap-up')
+      }
+    }, 150)
+  }
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
@@ -236,14 +331,15 @@ export default function HomePage() {
         ) : notes.length === 0 ? (
           <p className="text-gray-500">No notes yet.</p>
         ) : (
-          notes.map((bubble) => {
+          notes.map((bubble, index) => {
             const selected = selectMode && selectedIds.includes(bubble.id)
             return (
               <div
                 key={bubble.id}
+                data-note-id={bubble.id}
                 className={`
                   relative group
-                  transition-all
+                  transition-all duration-300 ease-in-out
                 `}
                 // Hanya toggle select di select mode
                 onClick={() => selectMode && handleBubbleSelectToggle(bubble.id)}
@@ -264,6 +360,10 @@ export default function HomePage() {
                   onRequestEdit={!selectMode ? () => setEditingNote(bubble) : undefined}
                   onRequestEditTime={!selectMode ? () => setEditingTimeNote(bubble) : undefined}
                   onOptimisticEdit={handleOptimisticEdit}
+                  onMoveUp={!selectMode ? handleMoveUp : undefined}
+                  onMoveDown={!selectMode ? handleMoveDown : undefined}
+                  isFirst={index === 0}
+                  isLast={index === notes.length - 1}
                   isEditing={editingNote?.id === bubble.id || editingTimeNote?.id === bubble.id}
                   selectMode={selectMode}
                   selected={selected}
@@ -298,6 +398,7 @@ export default function HomePage() {
           onNoteSaved={handleNoteSaved}
           onOptimisticAdd={handleOptimisticAdd}
           onOptimisticEdit={handleOptimisticEdit}
+          currentNotes={notes}
         />
       </div>
 

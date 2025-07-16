@@ -11,6 +11,7 @@ export async function saveNoteBubble(note: NoteBubble) {
         description: note.description,
         contents: note.contents,
         created_at: note.createdAt,
+        order: note.order ?? null,
         is_countdown: note.isCountdown ?? null,
         countdown_date: note.countdownDate ?? null,
       },
@@ -49,4 +50,26 @@ export async function deleteNoteBubble(note: NoteBubble) {
 
   const { error } = await supabase.from('notes').delete().eq('id', note.id)
   if (error) throw error
+}
+
+export async function updateNoteOrder(noteId: string, newOrder: number) {
+  const { error } = await supabase
+    .from('notes')
+    .update({ order: newOrder })
+    .eq('id', noteId)
+
+  if (error) throw error
+}
+
+export async function swapNoteOrders(noteId1: string, order1: number, noteId2: string, order2: number) {
+  // Simple approach: update both notes individually
+  try {
+    await Promise.all([
+      updateNoteOrder(noteId1, order1),
+      updateNoteOrder(noteId2, order2)
+    ])
+  } catch (error) {
+    console.error('Failed to swap note orders:', error)
+    throw error
+  }
 }

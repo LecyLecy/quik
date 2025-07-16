@@ -13,6 +13,7 @@ interface NoteInputProps {
   editingNote?: NoteBubble | null
   onEditDone?: () => void
   onEditCancelled?: () => void
+  currentNotes?: NoteBubble[] // For calculating order
 }
 
 const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput({
@@ -22,6 +23,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
   editingNote,
   onEditDone,
   onEditCancelled,
+  currentNotes = [],
 }, ref) {
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
@@ -258,6 +260,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
         contents: isCountdown ? existingUploads : [...existingUploads, ...newUploads],
         isCountdown: isCountdown ? true : undefined,
         countdownDate: fullCountdownISO || undefined,
+        order: currentNotes.length > 0 ? Math.max(0, ...currentNotes.map(n => n.order || 0)) + 1 : 1, // Next available order
       }
 
       console.log('📝 Creating note:', newNote)

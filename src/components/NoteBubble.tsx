@@ -17,6 +17,10 @@ interface NoteBubbleProps {
   onRequestEdit?: (bubble: NoteBubbleType) => void
   onRequestEditTime?: (bubble: NoteBubbleType) => void
   onOptimisticEdit?: (bubble: NoteBubbleType) => void
+  onMoveUp?: (bubble: NoteBubbleType) => void
+  onMoveDown?: (bubble: NoteBubbleType) => void
+  isFirst?: boolean
+  isLast?: boolean
   isEditing?: boolean
   selectMode?: boolean
   selected?: boolean
@@ -61,6 +65,10 @@ const NoteBubble = memo(function NoteBubble({
   onRequestEdit, 
   onRequestEditTime,
   onOptimisticEdit,
+  onMoveUp,
+  onMoveDown,
+  isFirst = false,
+  isLast = false,
   isEditing, 
   selectMode = false, 
   selected = false 
@@ -419,6 +427,29 @@ const NoteBubble = memo(function NoteBubble({
         Edit
       </button>
     )}
+    
+    {/* Reorder buttons */}
+    {!selectMode && (
+      <>
+        <button
+          onClick={() => onMoveUp && onMoveUp(bubble)}
+          disabled={isFirst || !onMoveUp}
+          className="text-green-400 hover:underline text-xs disabled:opacity-30"
+          title="Move up"
+        >
+          ↑
+        </button>
+        <button
+          onClick={() => onMoveDown && onMoveDown(bubble)}
+          disabled={isLast || !onMoveDown}
+          className="text-green-400 hover:underline text-xs disabled:opacity-30"
+          title="Move down"
+        >
+          ↓
+        </button>
+      </>
+    )}
+    
     <button
       onClick={() => onRequestDelete && onRequestDelete(bubble)}
       disabled={!onRequestDelete || selectMode}

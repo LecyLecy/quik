@@ -48,3 +48,29 @@ body {
     scrollbar-width: thin;
   }
 }
+
+/* Smooth note reordering animations */
+.animate-swap-up {
+  animation: swapUp 0.3s ease-in-out;
+}
+
+.animate-swap-down {
+  animation: swapDown 0.3s ease-in-out;
+}
+
+@keyframes swapUp {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-20px); z-index: 10; }
+  100% { transform: translateY(0); }
+}
+
+@keyframes swapDown {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(20px); z-index: 10; }
+  100% { transform: translateY(0); }
+}
+
+/* Ensure smooth transitions for note containers */
+[data-note-id] {
+  transition: transform 0.3s ease-in-out;
+}

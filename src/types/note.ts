@@ -16,6 +16,7 @@ export interface NoteBubble {
   description?: string
   contents: MediaItem[]
   createdAt: string // camelCase
+  order?: number // For manual reordering
 
   // 🆕 countdown support
   isCountdown?: boolean
