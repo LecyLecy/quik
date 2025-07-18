@@ -131,6 +131,44 @@ export default function HomePage() {
     // No auto-refresh - changes should be handled optimistically by NoteInput
   }, [])
 
+  // ===== Sticker Handlers =====
+  const handleFileUpload = useCallback((files: File[]) => {
+    if (files.length === 0) return
+    
+    const file = files[0] // Only take the first file
+    const supportedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 
+      'image/webp', 'image/avif', 'video/mp4'
+    ]
+    
+    // Check file type
+    if (!supportedTypes.includes(file.type)) {
+      alert(`File "${file.name}" is not supported. Please use PNG, JPG, GIF, WEBP, AVIF, or MP4 files.`)
+      return
+    }
+    
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`File "${file.name}" is too large. Please use files under 10MB.`)
+      return
+    }
+    
+    // Set single file
+    setUploadedFiles([file])
+  }, [])
+
+  const handleSendToWhatsApp = useCallback(() => {
+    // TODO: Implement WhatsApp sending logic
+    console.log('Sending to WhatsApp:', uploadedFiles)
+    alert('Send to WhatsApp functionality coming soon!')
+  }, [uploadedFiles])
+
+  const handleUnlinkWhatsApp = useCallback(() => {
+    // TODO: Implement WhatsApp unlinking logic
+    console.log('Unlinking WhatsApp')
+    alert('Unlink WhatsApp functionality coming soon!')
+  }, [])
+
   useEffect(() => {
     const updateOffset = () => {
       // Update offset logic removed since bottomOffset was unused
@@ -525,53 +563,202 @@ export default function HomePage() {
         {currentPage === 'sticker' ? (
           /* Sticker Page Content */
           <div className="flex flex-col items-center justify-center min-h-full py-8">
-            <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full">
+            <div className="bg-[#1e1e1e] rounded-lg p-8 max-w-md w-full">
               <h2 className="text-2xl font-bold text-white mb-6 text-center">WhatsApp Sticker</h2>
               
-              {/* QR Code Section */}
+              {/* Upload/Preview Section */}
               <div className="mb-6">
-                <div className="bg-white rounded-lg p-4 flex items-center justify-center mb-4">
-                  <div className="w-32 h-32 bg-gray-200 rounded border-2 border-dashed border-gray-400 flex items-center justify-center">
-                    <span className="text-gray-500 text-sm">QR Code</span>
+                {uploadedFiles.length === 0 ? (
+                  /* Upload Box */
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      isDragging 
+                        ? 'border-white bg-blue-400/10' 
+                        : 'border-gray-600 hover:border-gray-500'
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      setIsDragging(true)
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault()
+                      setIsDragging(false)
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      setIsDragging(false)
+                      const files = Array.from(e.dataTransfer.files)
+                      if (files.length > 0) {
+                        handleFileUpload([files[0]]) // Only take first file
+                      }
+                    }}
+                  >
+                    <div className="mb-4">
+                      <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-300 mb-2">Drop a file here or click to upload</p>
+                    <p className="text-gray-500 text-sm mb-4">PNG, JPG, GIF, WEBP, AVIF, MP4 up to 10MB</p>
+                    <input
+                      type="file"
+                      accept="image/*,video/mp4"
+                      className="hidden"
+                      id="sticker-upload"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || [])
+                        if (files.length > 0) {
+                          handleFileUpload([files[0]]) // Only take first file
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="sticker-upload"
+                      className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded cursor-pointer transition-colors"
+                    >
+                      Choose File
+                    </label>
                   </div>
-                </div>
-                <p className="text-gray-400 text-sm text-center">
-                  Scan this QR code with your phone to add stickers to WhatsApp
-                </p>
+                ) : (
+                  /* Preview Content */
+                  <div 
+                    className={`relative bg-[#1e1e1e] rounded-lg overflow-hidden transition-colors ${
+                      isDragging ? 'ring-2 ring-white bg-[#2a2a2a]' : ''
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      setIsDragging(true)
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault()
+                      setIsDragging(false)
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      setIsDragging(false)
+                      const files = Array.from(e.dataTransfer.files)
+                      if (files.length > 0) {
+                        handleFileUpload([files[0]]) // Replace with new file
+                      }
+                    }}
+                  >
+                    {uploadedFiles[0].type.startsWith('image/') ? (
+                      uploadedFiles[0].type === 'image/gif' ? (
+                        <img 
+                          src={URL.createObjectURL(uploadedFiles[0])}
+                          alt="Preview"
+                          className="w-full h-48 object-contain bg-[#2a2a2a]"
+                          style={{ maxWidth: '100%', maxHeight: '192px' }}
+                        />
+                      ) : (
+                        <img 
+                          src={URL.createObjectURL(uploadedFiles[0])}
+                          alt="Preview"
+                          className="w-full h-48 object-contain bg-[#2a2a2a]"
+                          style={{ maxWidth: '100%', maxHeight: '192px' }}
+                        />
+                      )
+                    ) : uploadedFiles[0].type === 'video/mp4' ? (
+                      <div className="relative w-full h-48 bg-[#2a2a2a] flex items-center justify-center">
+                        <video 
+                          src={URL.createObjectURL(uploadedFiles[0])}
+                          className="w-full h-full object-contain"
+                          style={{ maxWidth: '100%', maxHeight: '192px' }}
+                          muted
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-full h-48 bg-red-900/20 flex items-center justify-center">
+                        <div className="text-center">
+                          <svg className="w-12 h-12 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-red-400 text-sm">File not supported</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Drag overlay hint */}
+                    {isDragging && (
+                      <div className="absolute inset-0 bg-blue-600/20 border-2 border-white border-dashed rounded-lg flex items-center justify-center">
+                        <div className="text-center">
+                          <svg className="w-12 h-12 text-white mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <p className="text-white font-medium">Drop to replace</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Remove file button */}
+                    <button
+                      onClick={() => setUploadedFiles([])}
+                      className="absolute top-2 right-2 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    
+                    {/* File info */}
+                    <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                      {uploadedFiles[0].name}
+                    </div>
+
+                    {/* Replace file button */}
+                    <div className="absolute bottom-2 right-2">
+                      <input
+                        type="file"
+                        accept="image/*,video/mp4"
+                        className="hidden"
+                        id="replace-file"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || [])
+                          if (files.length > 0) {
+                            setUploadedFiles([files[0]]) // Replace with new file
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="replace-file"
+                        className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs cursor-pointer transition-colors"
+                      >
+                        Replace
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Upload Section */}
-              <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-                <div className="mb-4">
-                  <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                </div>
-                <p className="text-gray-300 mb-2">Drop images here or click to upload</p>
-                <p className="text-gray-500 text-sm">PNG, JPG, GIF up to 10MB</p>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  className="hidden"
-                  id="sticker-upload"
-                />
-                <label
-                  htmlFor="sticker-upload"
-                  className="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded cursor-pointer transition-colors"
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                {/* Send Button */}
+                <button
+                  onClick={handleSendToWhatsApp}
+                  disabled={uploadedFiles.length === 0}
+                  className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+                    uploadedFiles.length === 0
+                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-[#1e1e1e] hover:bg-[#2a2a2a] text-white'
+                  }`}
                 >
-                  Choose Files
-                </label>
-              </div>
+                  Edit
+                </button>
 
-              {/* Instructions */}
-              <div className="mt-6 text-gray-400 text-sm">
-                <p className="mb-2">How to use:</p>
-                <ol className="list-decimal list-inside space-y-1">
-                  <li>Upload your images</li>
-                  <li>Scan the QR code with your phone</li>
-                  <li>Add stickers to WhatsApp</li>
-                </ol>
+                {/* Unlink WhatsApp Button */}
+                <button
+                  onClick={handleUnlinkWhatsApp}
+                  className="w-full py-2 px-4 rounded-lg font-medium bg-red-600 hover:bg-red-700 text-white transition-colors"
+                >
+                  Unlink WhatsApp
+                </button>
               </div>
             </div>
           </div>
