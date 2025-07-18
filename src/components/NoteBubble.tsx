@@ -222,7 +222,7 @@ const NoteBubble = memo(function NoteBubble({
   className={`
     rounded-xl p-3 sm:p-4 mb-3 shadow-sm 
     inline-block max-w-full overflow-hidden
-    w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl
+    sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl
     relative transition-all duration-200 
     ${hasDocuments ? 'min-w-[300px] sm:min-w-[350px]' : 'min-w-0'}
     ${isEditing ? 'bg-[#004d40] border border-teal-400' : 'bg-[#1e1e1e]'} text-white

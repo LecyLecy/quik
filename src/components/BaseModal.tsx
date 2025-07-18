@@ -43,7 +43,7 @@ export default function BaseModal({
 
   return (
     <div
-      className={`fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4 ${className}`}
+      className={`fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 ${className}`}
       onClick={onClose}
     >
       {showBackButton && (

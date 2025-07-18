@@ -19,17 +19,15 @@ The app supports rich media previews, countdown notes, fullscreen modal previews
 - "Scroll to bottom" button, sticky header
 - Disabled buttons & input validation (file naming, select mode)
 - Prevents any actions on a bubble in select mode
+- **WhatsApp Sticker Integration**: Sidebar navigation with dedicated sticker page for creating and sending custom stickers to WhatsApp
+- **Advanced Media Editing**: Crop, resize, and video trimming capabilities for sticker creation
 
 **Integrations:**
 
 - Supabase (Database & Storage: `notes-media` bucket)
 - `react-linkify` for auto-linking URLs in note descriptions
-
----
-
-# Pending Tasks
-
-- [ ] make it responsive for all 3 devices desktop (laptop), mobile (poco f3), tab (xiaomi pad 6)
+- **WhatsApp Web API**: Backend server integration for QR code authentication and sticker sending
+- **Media Processing**: Sharp/FFmpeg for WebP conversion and optimization
 
 ---
 
@@ -42,6 +40,9 @@ The app supports rich media previews, countdown notes, fullscreen modal previews
 - Supabase (Postgres DB, Storage)
 - Tailwind CSS for UI
 - `react-linkify` for URL parsing
+- **Express.js Backend**: WhatsApp Web integration server
+- **whatsapp-web.js**: WhatsApp Web API library
+- **Sharp/FFmpeg**: Media processing and WebP conversion
 - (Optionally) Electron for desktop app shell (planned)
 - 
 

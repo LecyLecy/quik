@@ -25,44 +25,34 @@ export default function GalleryModal({
 }: GalleryModalProps) {
   return (
     <BaseModal isOpen={open} onClose={onClose} showBackButton={false}>
-      <div
-        className="bg-[#1e1e1e] rounded-xl max-w-[95vw] sm:max-w-[85vw] lg:max-w-[700px] w-full mx-auto"
-        style={{ maxHeight: '90vh', minHeight: 350, position: 'relative' }}
-      >
+      <div className="bg-[#1e1e1e] rounded-xl shadow-2xl border border-gray-700 mx-auto max-w-fit min-w-[300px] max-w-[95vw] sm:max-w-[85vw] lg:max-w-[800px]">
         {/* Header: Back + Description */}
-        <div
-          className="sticky top-0 left-0 w-full flex items-center px-4 gap-2 z-10 bg-[#1e1e1e]"
-          style={{ minHeight: 48 }}
-        >
+        <div className="flex items-center px-4 py-3 gap-3 border-b border-gray-700 bg-[#1e1e1e] rounded-t-xl">
           <button
             onClick={onClose}
-            className="text-white text-base bg-gray-800 px-4 py-1 rounded"
+            className="text-white bg-gray-800 hover:bg-gray-700 p-2 rounded-lg transition-colors flex items-center justify-center"
+            title="Back"
           >
-            Back
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
           <span
-            className="text-white text-base font-medium truncate"
-            style={{
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              flex: 1,
-            }}
+            className="text-white text-base font-medium truncate flex-1"
             title={description}
           >
             {description}
           </span>
         </div>
-        {/* Grid Gallery, scrollable */}
-        <div
-          className="p-4 pt-0 hide-scrollbar"
-          style={{
-            height: 'calc(90vh - 120px)',
-            maxHeight: '500px',
-            overflowY: 'auto'
-          }}
-        >
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        
+        {/* Content: Grid Gallery */}
+        <div className="p-4">
+          <div className={`grid gap-3 ${
+            items.length === 1 ? 'grid-cols-1' : 
+            items.length === 2 ? 'grid-cols-2' : 
+            items.length <= 4 ? 'grid-cols-2' : 
+            'grid-cols-2 sm:grid-cols-3'
+          }`}>
             {items.map((item) => {
               const ext = item.fileName?.split('.').pop() || item.type
 
