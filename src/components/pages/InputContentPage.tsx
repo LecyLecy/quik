@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import Header from '@/components/Header'
 
 interface InputContentPageProps {
   onMenuToggle: () => void
@@ -86,37 +87,18 @@ export default function InputContentPage({
   }, [])
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white">
+    <div className="flex flex-col h-screen bg-black text-white">
       {/* Header */}
-      <div className="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onMenuToggle}
-              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {!sidebarOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                )}
-              </svg>
-            </button>
-            <h1 className="text-xl font-bold">Upload Content</h1>
-          </div>
-          <button
-            onClick={onBackToNotes}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Back to Notes
-          </button>
-        </div>
-      </div>
+      <Header 
+        emoji="🎨"
+        title="Sticker"
+        onMenuToggle={onMenuToggle}
+        sidebarOpen={sidebarOpen}
+      />
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto p-6">
+        <div className="h-full overflow-y-auto p-6 bg-black">
           {/* Upload Area */}
           <div className="max-w-2xl mx-auto">
             {/* File Upload Section */}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import Header from '@/components/Header'
 
 interface EditPageProps {
   uploadedFiles: File[]
@@ -279,33 +280,38 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white">
+    <div className="flex flex-col h-screen bg-black text-white">
       {/* Header */}
-      <div className="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Edit Sticker</h1>
+      <Header 
+        emoji="✏️"
+        title="Edit"
+        onMenuToggle={() => {}} // Not used in EditPage
+        sidebarOpen={false} // Not used in EditPage
+        showBackButton={true}
+        onBackClick={onExitEdit}
+        rightContent={
           <div className="flex gap-2">
             <button
               onClick={handleCancelEdit}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleSaveChanges}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer"
             >
               Save
             </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full flex">
+        <div className="h-full flex bg-black">
           {/* Preview Area */}
-          <div className="flex-1 flex items-center justify-center bg-gray-800 relative">
+          <div className="flex-1 flex items-center justify-center bg-[#1a1a1a] relative">
             <div className="relative">
               {/* Blue box outline - 512x512 */}
               <div className="w-[512px] h-[512px] border-2 border-dashed border-blue-500 relative">
@@ -356,7 +362,7 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
           </div>
 
           {/* Controls Panel */}
-          <div className="w-80 bg-gray-800 border-l border-gray-700 p-6 overflow-y-auto">
+          <div className="w-80 bg-black border-l border-gray-800 p-6 overflow-y-auto">
             {/* Edit Options */}
             <div className="space-y-4 mt-6">
               <div className="flex justify-center">

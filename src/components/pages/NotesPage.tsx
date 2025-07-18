@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNotes } from '@/hooks/useNotes'
 import NoteItem from '@/components/NoteBubble'
 import NoteInput from '@/components/NoteInput'
+import Header from '@/components/Header'
 import type { NoteBubble } from '@/types/note'
 import { deleteNoteBubble, swapNoteOrders } from '@/hooks/useSaveNote'
 
@@ -306,27 +307,14 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
   return (
     <div className="flex flex-col h-screen bg-black text-white">
       {/* Header */}
-      <div className="flex-shrink-0 bg-black border-b border-gray-800 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onMenuToggle}
-              className="text-gray-400 hover:text-white transition-colors cursor-pointer"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {!sidebarOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                )}
-              </svg>
-            </button>
-            
-            <span>📒</span>
-            <h1 className="text-xl font-semibold">Notes</h1>
-          </div>
-          {!selectMode ? (
-            <div className="flex items-center gap-2">
+      <Header 
+        emoji="📒"
+        title="Notes"
+        onMenuToggle={onMenuToggle}
+        sidebarOpen={sidebarOpen}
+        rightContent={
+          !selectMode ? (
+            <>
               {searchMode ? (
                 <div className="flex items-center gap-2">
                   <input
@@ -338,18 +326,21 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
                     autoFocus
                   />
                   {searchText && filteredNotes.length > 6 && (
-                    <button
-                      onClick={() => setShowSearchModal(true)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
-                      title="View all results"
-                    >
+                    <div className="text-xs text-gray-400">
                       {filteredNotes.length} results
-                    </button>
+                    </div>
                   )}
                   <button
-                    onClick={handleSearchToggle}
-                    className="text-gray-400 hover:text-white transition-colors"
-                    title="Cancel search"
+                    onClick={() => {
+                      setSearchMode(false)
+                      setSearchText('')
+                      setTimeout(() => {
+                        if (scrollContainerRef.current) {
+                          scrollContainerRef.current.scrollTop = scrollPositionBeforeSearch
+                        }
+                      }, 0)
+                    }}
+                    className="text-gray-400 hover:text-white transition-colors cursor-pointer"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -359,7 +350,6 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
               ) : (
                 <button
                   onClick={() => {
-                    // Store current scroll position before entering search mode
                     if (scrollContainerRef.current) {
                       setScrollPositionBeforeSearch(scrollContainerRef.current.scrollTop)
                     }
@@ -374,7 +364,6 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
                 </button>
               )}
 
-              {/* Select Multiple Button */}
               <button
                 onClick={() => setSelectMode(true)}
                 className="text-gray-400 hover:bg-gray-400/10 p-2 rounded transition-colors cursor-pointer"
@@ -385,7 +374,6 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
                 </svg>
               </button>
 
-              {/* Refresh - Only show on notes page */}
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
@@ -396,9 +384,9 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </button>
-            </div>
+            </>
           ) : (
-            <div className="flex gap-2">
+            <>
               <button
                 onClick={handleExitSelectMode}
                 className="text-sm bg-gray-700 text-white px-3 py-1 rounded cursor-pointer"
@@ -416,10 +404,10 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
               >
                 Delete
               </button>
-            </div>
-          )}
-        </div>
-      </div>
+            </>
+          )
+        }
+      />
 
       {/* Main Content */}
       <div
