@@ -56,14 +56,6 @@ export default function HomePage() {
   const [videoTotalDuration, setVideoTotalDuration] = useState(0)
   const [videoStartTime, setVideoStartTime] = useState(0)
   const [videoEndTime, setVideoEndTime] = useState(3.0)
-  
-  // Video Timeline Drag States
-  const [isDraggingTimeline, setIsDraggingTimeline] = useState(false)
-  const [dragType, setDragType] = useState<'start' | 'end' | 'bar' | null>(null)
-  const [dragStartX, setDragStartX] = useState(0)
-  const [dragStartValue, setDragStartValue] = useState(0)
-  const [dragStartTime, setDragStartTime] = useState(0)
-  const [shouldUpdateVideo, setShouldUpdateVideo] = useState(true) // Control video updates
 
   // Handle global mouse events for dragging
   useEffect(() => {
@@ -297,9 +289,6 @@ export default function HomePage() {
   const handleVideoTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.target as HTMLVideoElement
     
-    // Don't update video time if user is dragging slider
-    if (isDraggingTimeline || !shouldUpdateVideo) return
-    
     // If we're in edit mode and video time exceeds end time, loop back to start
     if (isEditMode && video.currentTime >= videoEndTime) {
       video.currentTime = videoStartTime
@@ -309,7 +298,7 @@ export default function HomePage() {
     if (isEditMode && video.currentTime < videoStartTime) {
       video.currentTime = videoStartTime
     }
-  }, [isEditMode, videoStartTime, videoEndTime, isDraggingTimeline, shouldUpdateVideo])
+  }, [isEditMode, videoStartTime, videoEndTime])
 
   // Handle video play event to ensure it starts at the correct time
   const handleVideoPlay = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -322,85 +311,60 @@ export default function HomePage() {
   }, [isEditMode, videoStartTime, videoEndTime])
 
   // ===== Video Timeline Drag Handlers =====
-  const handleDragStart = useCallback((e: React.MouseEvent, type: 'start' | 'end' | 'bar') => {
+  const [isDraggingTimeline, setIsDraggingTimeline] = useState(false)
+  const [dragType, setDragType] = useState<'start' | 'end' | null>(null)
+  const [dragStartX, setDragStartX] = useState(0)
+  const [dragStartValue, setDragStartValue] = useState(0)
+
+  const handleDragStart = useCallback((e: React.MouseEvent, type: 'start' | 'end') => {
     e.preventDefault()
-    e.stopPropagation()
-    
-    console.log('Drag started:', type)
-    
     setIsDraggingTimeline(true)
     setDragType(type)
-    setShouldUpdateVideo(false) // Stop video updates during drag
+    setDragStartX(e.clientX)
+    setDragStartValue(type === 'start' ? videoStartTime : videoEndTime)
     
-    const startX = e.clientX
-    let startValue = 0
+    // Add global mouse event listeners
+    document.addEventListener('mousemove', handleDragMove)
+    document.addEventListener('mouseup', handleDragEnd)
+  }, [videoStartTime, videoEndTime])
+
+  const handleDragMove = useCallback((e: MouseEvent) => {
+    if (!isDraggingTimeline || !dragType) return
     
-    if (type === 'start') {
-      startValue = videoStartTime
-    } else if (type === 'end') {
-      startValue = videoEndTime
-    } else if (type === 'bar') {
-      startValue = videoStartTime
-    }
+    const deltaX = e.clientX - dragStartX
+    const timelineWidth = 300 // Approximate width of the timeline
+    const deltaTime = (deltaX / timelineWidth) * videoTotalDuration
     
-    // Handle mouse move
-    const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - startX
-      const timelineElement = document.querySelector('.timeline-track')
-      const timelineWidth = timelineElement ? timelineElement.clientWidth : 300
-      const deltaTime = (deltaX / timelineWidth) * videoTotalDuration
+    if (dragType === 'start') {
+      const newStartTime = Math.max(0, Math.min(videoEndTime - 0.1, dragStartValue + deltaTime))
+      const newDuration = videoEndTime - newStartTime
       
-      console.log('Dragging:', type, deltaX, deltaTime)
+      // Ensure duration doesn't exceed 4.9 seconds
+      if (newDuration <= 4.9) {
+        setVideoStartTime(newStartTime)
+        setVideoDuration(newDuration)
+      }
+    } else if (dragType === 'end') {
+      const newEndTime = Math.max(videoStartTime + 0.1, Math.min(videoTotalDuration, dragStartValue + deltaTime))
+      const newDuration = newEndTime - videoStartTime
       
-      if (type === 'start') {
-        const newStartTime = Math.max(0, Math.min(videoEndTime - 0.1, startValue + deltaTime))
-        const newDuration = videoEndTime - newStartTime
-        
-        if (newDuration >= 0.1 && newDuration <= 4.9) {
-          setVideoStartTime(newStartTime)
-          setVideoDuration(newDuration)
-        }
-      } else if (type === 'end') {
-        const newEndTime = Math.max(videoStartTime + 0.1, Math.min(videoTotalDuration, startValue + deltaTime))
-        const newDuration = newEndTime - videoStartTime
-        
-        if (newDuration >= 0.1 && newDuration <= 4.9) {
-          setVideoEndTime(newEndTime)
-          setVideoDuration(newDuration)
-        }
-      } else if (type === 'bar') {
-        const newStartTime = Math.max(0, Math.min(videoTotalDuration - videoDuration, startValue + deltaTime))
-        const newEndTime = newStartTime + videoDuration
-        
-        if (newEndTime <= videoTotalDuration) {
-          setVideoStartTime(newStartTime)
-          setVideoEndTime(newEndTime)
-        }
+      // Ensure duration doesn't exceed 4.9 seconds
+      if (newDuration <= 4.9) {
+        setVideoEndTime(newEndTime)
+        setVideoDuration(newDuration)
       }
     }
-    
-    const handleMouseUp = () => {
-      console.log('Drag ended')
-      setIsDraggingTimeline(false)
-      setDragType(null)
-      setShouldUpdateVideo(true) // Resume video updates after drag
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-      
-      // Update video position after drag ends
-      const videoElements = document.querySelectorAll('video')
-      videoElements.forEach(video => {
-        if (video.src && video.src.includes('blob:')) {
-          video.currentTime = videoStartTime
-        }
-      })
-    }
-    
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-  }, [videoStartTime, videoEndTime, videoTotalDuration, videoDuration])
+  }, [isDraggingTimeline, dragType, dragStartX, dragStartValue, videoTotalDuration, videoStartTime, videoEndTime])
 
-  // Cleanup event listeners on unmount
+  const handleDragEnd = useCallback(() => {
+    setIsDraggingTimeline(false)
+    setDragType(null)
+    
+    // Remove global mouse event listeners
+    document.removeEventListener('mousemove', handleDragMove)
+    document.removeEventListener('mouseup', handleDragEnd)
+  }, [handleDragMove])
+
   const handleSaveChanges = useCallback(() => {
     // TODO: Apply all edits and save
     console.log('Saving changes:', { rotation, scale, position, videoDuration, videoStartTime, videoEndTime })
@@ -894,6 +858,13 @@ export default function HomePage() {
                             onTimeUpdate={handleVideoTimeUpdate}
                             onPlay={handleVideoPlay}
                           />
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center">
+                              <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
                         </div>
                       )}
                       
@@ -910,7 +881,7 @@ export default function HomePage() {
                   </div>
 
                   {/* Edit Options */}
-                  <div className="space-y-4 mt-6">
+                  <div className="space-y-4">
                     <div className="flex justify-center">
                       <button 
                         onClick={handleRotateClick}
@@ -953,37 +924,26 @@ export default function HomePage() {
                           </div>
 
                           {/* Timeline with draggable yellow bar */}
-                          <div className="relative select-none">
+                          <div className="relative">
                             {/* Timeline track */}
-                            <div className="timeline-track w-full h-2 bg-gray-600 rounded-full relative">
+                            <div className="w-full h-2 bg-gray-600 rounded-full relative">
                               {/* Yellow selection bar */}
                               <div 
-                                className={`absolute h-2 bg-yellow-400 rounded-full shadow-md transition-opacity ${
-                                  isDraggingTimeline ? 'opacity-80' : 'opacity-100'
-                                } ${
-                                  dragType === 'bar' ? 'cursor-grabbing' : 'cursor-grab'
-                                }`}
+                                className="absolute h-2 bg-yellow-400 rounded-full"
                                 style={{
                                   left: `${(videoStartTime / videoTotalDuration) * 100}%`,
                                   width: `${(videoDuration / videoTotalDuration) * 100}%`
                                 }}
-                                onMouseDown={(e) => handleDragStart(e, 'bar')}
                               >
                                 {/* Left handle */}
                                 <div 
-                                  className="absolute w-4 h-4 bg-yellow-400 rounded-full -left-2 -top-1 cursor-ew-resize border-2 border-white hover:scale-110 transition-transform shadow-lg z-10"
-                                  onMouseDown={(e) => {
-                                    e.stopPropagation()
-                                    handleDragStart(e, 'start')
-                                  }}
+                                  className="absolute w-4 h-4 bg-yellow-400 rounded-full -left-2 -top-1 cursor-ew-resize border-2 border-white hover:scale-110 transition-transform"
+                                  onMouseDown={(e) => handleDragStart(e, 'start')}
                                 />
                                 {/* Right handle */}
                                 <div 
-                                  className="absolute w-4 h-4 bg-yellow-400 rounded-full -right-2 -top-1 cursor-ew-resize border-2 border-white hover:scale-110 transition-transform shadow-lg z-10"
-                                  onMouseDown={(e) => {
-                                    e.stopPropagation()
-                                    handleDragStart(e, 'end')
-                                  }}
+                                  className="absolute w-4 h-4 bg-yellow-400 rounded-full -right-2 -top-1 cursor-ew-resize border-2 border-white hover:scale-110 transition-transform"
+                                  onMouseDown={(e) => handleDragStart(e, 'end')}
                                 />
                               </div>
                             </div>
@@ -999,6 +959,42 @@ export default function HomePage() {
                           <div className="flex justify-between text-xs text-gray-400 mt-2">
                             <span>Start: {videoStartTime.toFixed(1)}s</span>
                             <span>End: {videoEndTime.toFixed(1)}s</span>
+                          </div>
+
+                          {/* Preview section */}
+                          <div className="mt-3 bg-gray-800 rounded-lg p-3">
+                            <div className="flex justify-between text-xs text-gray-400 mb-1">
+                              <span>Preview</span>
+                              <span>{videoDuration.toFixed(1)}s selected</span>
+                            </div>
+                            <div className="w-full h-1 bg-gray-600 rounded-full">
+                              <div 
+                                className="h-1 bg-yellow-400 rounded-full transition-all duration-300"
+                                style={{ width: `${(videoDuration / videoTotalDuration) * 100}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>0s</span>
+                              <span>{videoTotalDuration.toFixed(1)}s</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                            </div>
+                            <div className="relative h-2 bg-gray-700 rounded-full overflow-hidden">
+                              <div 
+                                className="absolute top-0 h-full bg-yellow-500 rounded-full"
+                                style={{
+                                  left: `${(videoStartTime / videoTotalDuration) * 100}%`,
+                                  width: `${(videoDuration / videoTotalDuration) * 100}%`
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>0s</span>
+                              <span>{videoTotalDuration.toFixed(1)}s</span>
+                            </div>
                           </div>
                         </div>
                       </div>
