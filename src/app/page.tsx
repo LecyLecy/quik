@@ -5,6 +5,7 @@ import { useNotes } from '@/hooks/useNotes'
 import { useDebounce } from '@/hooks/useDebounce'
 import NoteItem from '@/components/NoteBubble'
 import NoteInput from '@/components/NoteInput'
+import Sidebar from '@/components/Sidebar'
 import type { NoteBubble } from '@/types/note'
 import { deleteNoteBubble, swapNoteOrders } from '@/hooks/useSaveNote'
 
@@ -30,6 +31,40 @@ export default function HomePage() {
   const [searchText, setSearchText] = useState('')
   const [showSearchModal, setShowSearchModal] = useState(false)
   const [scrollPositionBeforeSearch, setScrollPositionBeforeSearch] = useState(0)
+
+  // ===== Navigation =====
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState<'notes' | 'sticker'>('notes')
+
+  // ===== Sticker State =====
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [stickerPacks, setStickerPacks] = useState<Array<{ id: string; name: string; files: File[] }>>([])
+  const [currentPackName, setCurrentPackName] = useState('')
+  const [isDragging, setIsDragging] = useState(false)
+
+  // Close sidebar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarOpen) {
+        const target = event.target as HTMLElement
+        const sidebar = document.querySelector('[data-sidebar]')
+        const hamburger = document.querySelector('[data-hamburger]')
+        
+        // Check if click is outside sidebar and hamburger button
+        if (sidebar && hamburger && 
+            !sidebar.contains(target) && 
+            !hamburger.contains(target)) {
+          setSidebarOpen(false)
+        }
+      }
+    }
+
+    if (sidebarOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [sidebarOpen])
 
   // ===== Manual Refresh Handler =====
   const handleManualRefresh = useCallback(async () => {
@@ -362,80 +397,102 @@ export default function HomePage() {
 
   // ===== UI =====
   return (
-    <main className="flex flex-col h-screen bg-black text-white relative">
+    <main className="flex flex-col h-screen bg-black text-white relative overflow-hidden">
       {/* Sticky header */}
-      <div className="sticky top-0 z-50 bg-black px-3 sm:px-6 lg:px-8 pt-4 pb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="sticky top-0 z-50 bg-black border-b border-gray-800 px-3 sm:px-6 lg:px-8 pt-4 pb-2 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Burger Menu Icon */}
+          <button
+            data-hamburger
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="text-gray-400 hover:text-white transition-all duration-300 p-1"
+            title={sidebarOpen ? "Close menu" : "Open menu"}
+          >
+            <svg 
+              className={`w-5 h-5 transition-all duration-300 ${sidebarOpen ? 'rotate-180' : 'rotate-0'}`} 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth={2} 
+              viewBox="0 0 24 24"
+            >
+              {sidebarOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+          
           <span>📒</span>
-          <h1 className="text-xl font-semibold">Your Notes</h1>
+          <h1 className="text-xl font-semibold">
+            {currentPage === 'notes' ? 'Notes' : 'Sticker'}
+          </h1>
         </div>
         {!selectMode ? (
           <div className="flex items-center gap-2">
-            {/* Search */}
-            {searchMode ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Search notes..."
-                  className="bg-gray-800 text-white px-3 py-1 rounded border border-gray-600 focus:border-blue-400 focus:outline-none text-sm w-40"
-                  autoFocus
-                />
-                {searchText && filteredNotes.length > 6 && (
+            {/* Search - Only show on notes page */}
+            {currentPage === 'notes' && (
+              <>
+                {searchMode ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      placeholder="Search notes..."
+                      className="bg-gray-800 text-white px-3 py-1 rounded border border-gray-600 focus:border-blue-400 focus:outline-none text-sm w-40"
+                      autoFocus
+                    />
+                    {searchText && filteredNotes.length > 6 && (
+                      <button
+                        onClick={() => setShowSearchModal(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                        title="View all results"
+                      >
+                        {filteredNotes.length} results
+                      </button>
+                    )}
+                    <button
+                      onClick={handleSearchClose}
+                      className="text-gray-400 hover:text-white transition-colors"
+                      title="Cancel search"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
                   <button
-                    onClick={() => setShowSearchModal(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
-                    title="View all results"
+                    onClick={() => {
+                      // Store current scroll position before entering search mode
+                      if (scrollContainerRef.current) {
+                        setScrollPositionBeforeSearch(scrollContainerRef.current.scrollTop)
+                      }
+                      setSearchMode(true)
+                    }}
+                    className="text-gray-400 hover:bg-gray-400/10 p-2 rounded transition-colors"
+                    title="Search"
                   >
-                    {filteredNotes.length} results
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                   </button>
                 )}
+
+                {/* Refresh - Only show on notes page */}
                 <button
-                  onClick={handleSearchClose}
-                  className="text-gray-400 hover:text-white transition-colors"
-                  title="Cancel search"
+                  onClick={handleManualRefresh}
+                  disabled={refreshing}
+                  className="text-sm text-green-400 hover:bg-green-400/10 p-2 rounded disabled:opacity-50 transition-colors"
+                  title="Refresh"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
                 </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  // Store current scroll position before entering search mode
-                  if (scrollContainerRef.current) {
-                    setScrollPositionBeforeSearch(scrollContainerRef.current.scrollTop)
-                  }
-                  setSearchMode(true)
-                }}
-                className="text-gray-400 hover:bg-gray-400/10 p-2 rounded transition-colors"
-                title="Search"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
+              </>
             )}
-
-            {/* Refresh */}
-            <button
-              onClick={handleManualRefresh}
-              disabled={refreshing}
-              className="text-sm text-green-400 hover:bg-green-400/10 p-2 rounded disabled:opacity-50 transition-colors"
-              title="Refresh"
-            >
-              {refreshing ? (
-                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              )}
-            </button>
           </div>
         ) : (
           <div className="flex gap-2">
@@ -460,17 +517,73 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* Scrollable notes */}
+      {/* Main Content */}
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 flex flex-col gap-3 mx-auto w-full max-w-none sm:max-w-4xl lg:max-w-7xl xl:max-w-none hide-scrollbar"
       >
-        {loading ? (
-          <p className="text-gray-400">Loading notes...</p>
-        ) : filteredNotes.length === 0 ? (
-          <p className="text-gray-500">{searchText ? 'No notes found.' : 'No notes yet.'}</p>
+        {currentPage === 'sticker' ? (
+          /* Sticker Page Content */
+          <div className="flex flex-col items-center justify-center min-h-full py-8">
+            <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full">
+              <h2 className="text-2xl font-bold text-white mb-6 text-center">WhatsApp Sticker</h2>
+              
+              {/* QR Code Section */}
+              <div className="mb-6">
+                <div className="bg-white rounded-lg p-4 flex items-center justify-center mb-4">
+                  <div className="w-32 h-32 bg-gray-200 rounded border-2 border-dashed border-gray-400 flex items-center justify-center">
+                    <span className="text-gray-500 text-sm">QR Code</span>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm text-center">
+                  Scan this QR code with your phone to add stickers to WhatsApp
+                </p>
+              </div>
+
+              {/* Upload Section */}
+              <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
+                <div className="mb-4">
+                  <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <p className="text-gray-300 mb-2">Drop images here or click to upload</p>
+                <p className="text-gray-500 text-sm">PNG, JPG, GIF up to 10MB</p>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  id="sticker-upload"
+                />
+                <label
+                  htmlFor="sticker-upload"
+                  className="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded cursor-pointer transition-colors"
+                >
+                  Choose Files
+                </label>
+              </div>
+
+              {/* Instructions */}
+              <div className="mt-6 text-gray-400 text-sm">
+                <p className="mb-2">How to use:</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Upload your images</li>
+                  <li>Scan the QR code with your phone</li>
+                  <li>Add stickers to WhatsApp</li>
+                </ol>
+              </div>
+            </div>
+          </div>
         ) : (
-          filteredNotes.map((bubble, index) => {
+          /* Notes Page Content */
+          <>
+            {loading ? (
+              <p className="text-gray-400">Loading notes...</p>
+            ) : filteredNotes.length === 0 ? (
+              <p className="text-gray-500">{searchText ? 'No notes found.' : 'No notes yet.'}</p>
+            ) : (
+              filteredNotes.map((bubble, index) => {
             const selected = selectMode && selectedIds.includes(bubble.id)
             const originalIndex = notes.findIndex(n => n.id === bubble.id)
             return (
@@ -514,6 +627,8 @@ export default function HomePage() {
             )
           })
         )}
+          </>
+        )}
       </div>
 
       {/* Scroll to bottom button */}
@@ -528,21 +643,23 @@ export default function HomePage() {
         </button>
       )}
 
-      {/* Input area wrapper */}
-      <div ref={inputWrapperRef} className="mx-auto w-full max-w-none sm:max-w-4xl lg:max-w-7xl xl:max-w-none">
-        <NoteInput
-          editingNote={editingNote || editingTimeNote}
-          onEditDone={handleEditDone}
-          onEditCancelled={() => {
-            setEditingNote(null)
-            setEditingTimeNote(null)
-          }}
-          onNoteSaved={handleNoteSaved}
-          onOptimisticAdd={handleOptimisticAdd}
-          onOptimisticEdit={handleOptimisticEdit}
-          currentNotes={notes}
-        />
-      </div>
+      {/* Input area wrapper - Only show on notes page */}
+      {currentPage === 'notes' && (
+        <div ref={inputWrapperRef} className="mx-auto w-full max-w-none sm:max-w-4xl lg:max-w-7xl xl:max-w-none">
+          <NoteInput
+            editingNote={editingNote || editingTimeNote}
+            onEditDone={handleEditDone}
+            onEditCancelled={() => {
+              setEditingNote(null)
+              setEditingTimeNote(null)
+            }}
+            onNoteSaved={handleNoteSaved}
+            onOptimisticAdd={handleOptimisticAdd}
+            onOptimisticEdit={handleOptimisticEdit}
+            currentNotes={notes}
+          />
+        </div>
+      )}
 
       {/* Single delete confirm modal */}
       {pendingDelete && (
@@ -703,6 +820,14 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* Sidebar Navigation */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+      />
     </main>
   )
 }
