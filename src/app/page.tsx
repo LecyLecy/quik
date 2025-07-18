@@ -739,14 +739,14 @@ export default function HomePage() {
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                {/* Send Button */}
+                {/* Edit Button */}
                 <button
                   onClick={handleSendToWhatsApp}
                   disabled={uploadedFiles.length === 0}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
                     uploadedFiles.length === 0
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      : 'bg-[#1e1e1e] hover:bg-[#2a2a2a] text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}
                 >
                   Edit
