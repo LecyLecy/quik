@@ -26,6 +26,12 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
   const [isDraggingTimeline, setIsDraggingTimeline] = useState(false)
   const [dragType, setDragType] = useState<'start' | 'end' | 'bar' | null>(null)
   const [shouldUpdateVideo, setShouldUpdateVideo] = useState(true)
+  
+  // Preview Modal State
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  
+  // Preview state
+  const [showPreview, setShowPreview] = useState(false)
 
   // Handle global mouse events for content dragging
   useEffect(() => {
@@ -187,9 +193,8 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
   // Save and cancel handlers
   const handleSaveChanges = useCallback(() => {
     console.log('Saving changes:', { rotation, scale, position, videoDuration, videoStartTime, videoEndTime })
-    alert('Changes saved successfully!')
-    onExitEdit()
-  }, [rotation, scale, position, videoDuration, videoStartTime, videoEndTime, onExitEdit])
+    setShowPreview(true)
+  }, [rotation, scale, position, videoDuration, videoStartTime, videoEndTime])
 
   const handleCancelEdit = useCallback(() => {
     setRotation(0)
@@ -198,8 +203,18 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     setVideoDuration(3.0)
     setVideoStartTime(0)
     setVideoEndTime(3.0)
+    setShowPreview(false)
     onExitEdit()
   }, [onExitEdit])
+
+  const handleConfirmSend = useCallback(() => {
+    alert('Sticker sent successfully!')
+    onExitEdit()
+  }, [onExitEdit])
+
+  const handleBackToEdit = useCallback(() => {
+    setShowPreview(false)
+  }, [])
 
   // Auto-play video with looping
   useEffect(() => {
@@ -229,6 +244,166 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
           <p className="text-gray-400">No file to edit</p>
         </div>
       </div>
+    )
+  }
+
+  // Show preview mode
+  if (showPreview) {
+    return (
+      <>
+        {/* Main edit page content */}
+        <div className="flex flex-col h-screen bg-black text-white">
+          <Header 
+            emoji="✏️"
+            title="Edit Sticker"
+            showBackButton={true}
+            onBackClick={onExitEdit}
+            onMenuToggle={() => {}}
+            sidebarOpen={false}
+          />
+
+          <div className="flex-1 overflow-y-auto p-6 bg-black">
+            <div className="max-w-md mx-auto">
+              <div className="bg-[#1e1e1e] rounded-lg p-6">
+                {/* Edit Preview Container - 512x512 with crop */}
+                <div className="relative bg-[#2a2a2a] rounded-lg overflow-hidden flex items-center justify-center" style={{ width: '384px', height: '384px', margin: '0 auto' }}>
+                  {/* 512x512 Crop Box */}
+                  <div 
+                    className="relative border-2 border-blue-400 border-dashed bg-transparent overflow-hidden cursor-move"
+                    style={{ width: '256px', height: '256px' }}
+                  >
+                    {/* Content that can be dragged */}
+                    {uploadedFiles[0].type.startsWith('image/') ? (
+                      <img 
+                        src={URL.createObjectURL(uploadedFiles[0])}
+                        alt="Current sticker"
+                        className="absolute cursor-move select-none"
+                        style={{ 
+                          transform: `rotate(${rotation}deg) scale(${scale / 100})`,
+                          left: `calc(50% + ${position.x}px)`,
+                          top: `calc(50% + ${position.y}px)`,
+                          transformOrigin: 'center',
+                          translate: '-50% -50%'
+                        }}
+                        draggable={false}
+                      />
+                    ) : (
+                      <div 
+                        className="absolute cursor-move select-none"
+                        style={{ 
+                          transform: `rotate(${rotation}deg) scale(${scale / 100})`,
+                          left: `calc(50% + ${position.x}px)`,
+                          top: `calc(50% + ${position.y}px)`,
+                          transformOrigin: 'center',
+                          translate: '-50% -50%'
+                        }}
+                      >
+                        <video 
+                          src={URL.createObjectURL(uploadedFiles[0])}
+                          className="block"
+                          style={{ width: '256px', height: '256px', objectFit: 'contain' }}
+                          muted
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Preview Modal - Blurred Overlay */}
+        <div className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[#1e1e1e] rounded-lg p-6 max-w-sm w-full mx-4 border border-gray-700">
+            <h2 className="text-lg font-semibold mb-4 text-center text-white">Final Sticker Preview</h2>
+            
+            {/* Final Sticker Preview - 512x512 */}
+            <div 
+              className="relative rounded-lg overflow-hidden flex items-center justify-center mb-6 border-2 border-dashed border-gray-500" 
+              style={{ 
+                width: '256px', 
+                height: '256px', 
+                margin: '0 auto',
+                backgroundImage: `
+                  linear-gradient(45deg, #666 25%, transparent 25%),
+                  linear-gradient(-45deg, #666 25%, transparent 25%),
+                  linear-gradient(45deg, transparent 75%, #666 75%),
+                  linear-gradient(-45deg, transparent 75%, #666 75%)
+                `,
+                backgroundSize: '20px 20px',
+                backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+              }}
+            >
+              {/* Cropped content preview - only show what's inside the crop area */}
+              <div 
+                className="relative overflow-hidden"
+                style={{ width: '256px', height: '256px' }}
+              >
+                {uploadedFiles[0].type.startsWith('image/') ? (
+                  <img 
+                    src={URL.createObjectURL(uploadedFiles[0])}
+                    alt="Final sticker"
+                    className="absolute select-none pointer-events-none"
+                    style={{ 
+                      transform: `rotate(${rotation}deg) scale(${scale / 100})`,
+                      left: `calc(50% + ${position.x}px)`,
+                      top: `calc(50% + ${position.y}px)`,
+                      transformOrigin: 'center',
+                      translate: '-50% -50%'
+                    }}
+                  />
+                ) : (
+                  <div 
+                    className="absolute select-none pointer-events-none"
+                    style={{ 
+                      transform: `rotate(${rotation}deg) scale(${scale / 100})`,
+                      left: `calc(50% + ${position.x}px)`,
+                      top: `calc(50% + ${position.y}px)`,
+                      transformOrigin: 'center',
+                      translate: '-50% -50%'
+                    }}
+                  >
+                    <video 
+                      src={URL.createObjectURL(uploadedFiles[0])}
+                      className="block"
+                      style={{ width: '256px', height: '256px', objectFit: 'contain' }}
+                      muted
+                      autoPlay
+                      loop
+                    />
+                  </div>
+                )}
+              </div>
+              
+              {/* Size indicator */}
+              <div className="absolute bottom-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded">
+                512x512
+              </div>
+            </div>
+
+            <div className="text-center text-gray-400 text-sm mb-6">
+              Checkered areas show transparent background • Only content is visible
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={handleConfirmSend}
+                className="w-full py-3 px-4 rounded-lg font-medium bg-green-600 hover:bg-green-700 text-white transition-colors"
+              >
+                📤 Send Sticker
+              </button>
+              <button
+                onClick={handleBackToEdit}
+                className="w-full py-2 px-4 rounded-lg font-medium bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
     )
   }
 
