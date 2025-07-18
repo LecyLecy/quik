@@ -41,6 +41,40 @@ export default function HomePage() {
   const [stickerPacks, setStickerPacks] = useState<Array<{ id: string; name: string; files: File[] }>>([])
   const [currentPackName, setCurrentPackName] = useState('')
   const [isDragging, setIsDragging] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  
+  // Edit parameters
+  const [rotation, setRotation] = useState(0)
+  const [scale, setScale] = useState(100)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [isDraggingContent, setIsDraggingContent] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+
+  // Handle global mouse events for dragging
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!isDraggingContent) return
+      e.preventDefault()
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      })
+    }
+
+    const handleGlobalMouseUp = () => {
+      setIsDraggingContent(false)
+    }
+
+    if (isDraggingContent) {
+      document.addEventListener('mousemove', handleGlobalMouseMove)
+      document.addEventListener('mouseup', handleGlobalMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove)
+      document.removeEventListener('mouseup', handleGlobalMouseUp)
+    }
+  }, [isDraggingContent, dragStart])
 
   // Close sidebar when clicking outside
   useEffect(() => {
@@ -160,13 +194,56 @@ export default function HomePage() {
   const handleSendToWhatsApp = useCallback(() => {
     // TODO: Implement WhatsApp sending logic
     console.log('Sending to WhatsApp:', uploadedFiles)
-    alert('Send to WhatsApp functionality coming soon!')
+    // Enter edit mode instead of sending
+    setIsEditMode(true)
   }, [uploadedFiles])
 
   const handleUnlinkWhatsApp = useCallback(() => {
     // TODO: Implement WhatsApp unlinking logic
     console.log('Unlinking WhatsApp')
     alert('Unlink WhatsApp functionality coming soon!')
+  }, [])
+
+  // ===== Edit Handlers =====
+  const handleRotateClick = useCallback(() => {
+    const newRotation = (rotation + 90) % 360
+    setRotation(newRotation)
+    console.log('Rotated to:', newRotation)
+  }, [rotation])
+
+  const handleContentMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDraggingContent(true)
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
+  }, [position])
+
+  const handleContentMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingContent) return
+    e.preventDefault()
+    setPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    })
+  }, [isDraggingContent, dragStart])
+
+  const handleContentMouseUp = useCallback(() => {
+    setIsDraggingContent(false)
+  }, [])
+
+  const handleSaveChanges = useCallback(() => {
+    // TODO: Apply all edits and save
+    console.log('Saving changes:', { rotation, scale, position })
+    alert('Changes saved successfully!')
+    setIsEditMode(false)
+  }, [rotation, scale, position])
+
+  const handleCancelEdit = useCallback(() => {
+    // Reset all edit parameters
+    setRotation(0)
+    setScale(100)
+    setPosition({ x: 0, y: 0 })
+    setIsEditMode(false)
+    console.log('Edit cancelled')
   }, [])
 
   useEffect(() => {
@@ -564,10 +641,131 @@ export default function HomePage() {
           /* Sticker Page Content */
           <div className="flex flex-col items-center justify-center min-h-full py-8">
             <div className="bg-[#1e1e1e] rounded-lg p-8 max-w-md w-full">
-              <h2 className="text-2xl font-bold text-white mb-6 text-center">WhatsApp Sticker</h2>
+              <h2 className="text-2xl font-bold text-white mb-6 text-center">
+                {isEditMode ? 'Edit Sticker' : 'WhatsApp Sticker'}
+              </h2>
               
-              {/* Upload/Preview Section */}
-              <div className="mb-6">
+              {isEditMode ? (
+                /* Edit Mode Interface */
+                <div className="space-y-6">
+                  {/* Edit Preview Container - 512x512 with crop */}
+                  <div className="relative bg-[#2a2a2a] rounded-lg overflow-hidden flex items-center justify-center" style={{ width: '384px', height: '384px', margin: '0 auto' }}>
+                    {/* 512x512 Crop Box */}
+                    <div 
+                      className="relative border-2 border-blue-400 border-dashed bg-transparent overflow-hidden cursor-move"
+                      style={{ width: '256px', height: '256px' }}
+                      onMouseMove={handleContentMouseMove}
+                      onMouseUp={handleContentMouseUp}
+                      onMouseLeave={handleContentMouseUp}
+                    >
+                      {/* Content that can be dragged */}
+                      {uploadedFiles[0].type.startsWith('image/') ? (
+                        <img 
+                          src={URL.createObjectURL(uploadedFiles[0])}
+                          alt="Current sticker"
+                          className="absolute cursor-move select-none"
+                          style={{ 
+                            transform: `rotate(${rotation}deg) scale(${scale / 100})`,
+                            left: `calc(50% + ${position.x}px)`,
+                            top: `calc(50% + ${position.y}px)`,
+                            transformOrigin: 'center',
+                            translate: '-50% -50%'
+                          }}
+                          onMouseDown={handleContentMouseDown}
+                          draggable={false}
+                        />
+                      ) : (
+                        <div 
+                          className="absolute cursor-move select-none"
+                          style={{ 
+                            transform: `rotate(${rotation}deg) scale(${scale / 100})`,
+                            left: `calc(50% + ${position.x}px)`,
+                            top: `calc(50% + ${position.y}px)`,
+                            transformOrigin: 'center',
+                            translate: '-50% -50%'
+                          }}
+                          onMouseDown={handleContentMouseDown}
+                        >
+                          <video 
+                            src={URL.createObjectURL(uploadedFiles[0])}
+                            className="block"
+                            style={{ width: '256px', height: '256px', objectFit: 'contain' }}
+                            muted
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center">
+                              <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Crop Box Info */}
+                      <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                        512x512
+                      </div>
+                    </div>
+                    
+                    {/* Instructions */}
+                    <div className="absolute bottom-2 left-2 right-2 text-center text-gray-400 text-xs">
+                      Drag to position • Only content inside the blue box will be sent
+                    </div>
+                  </div>
+
+                  {/* Edit Options */}
+                  <div className="space-y-4">
+                    <div className="flex justify-center">
+                      <button 
+                        onClick={handleRotateClick}
+                        className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg font-medium transition-colors"
+                      >
+                        🔄 Rotate
+                      </button>
+                    </div>
+
+                    {/* Scale Slider */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-gray-300 text-sm mb-2">
+                          Size: {scale}%
+                        </label>
+                        <input 
+                          type="range" 
+                          min="25" 
+                          max="200" 
+                          value={scale}
+                          onChange={(e) => setScale(parseInt(e.target.value))}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>Small</span>
+                          <span>Large</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleSaveChanges}
+                      className="w-full py-3 px-4 rounded-lg font-medium bg-green-600 hover:bg-green-700 text-white transition-colors"
+                    >
+                      Save Changes
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="w-full py-2 px-4 rounded-lg font-medium bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Normal Mode - Upload/Preview Section */
+                <div className="mb-6">
                 {uploadedFiles.length === 0 ? (
                   /* Upload Box */
                   <div 
@@ -736,9 +934,11 @@ export default function HomePage() {
                   </div>
                 )}
               </div>
+              )}
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
+              {/* Action Buttons - Only show when not in edit mode */}
+              {!isEditMode && (
+                <div className="space-y-3">
                 {/* Edit Button */}
                 <button
                   onClick={handleSendToWhatsApp}
@@ -760,6 +960,7 @@ export default function HomePage() {
                   Unlink WhatsApp
                 </button>
               </div>
+              )}
             </div>
           </div>
         ) : (
