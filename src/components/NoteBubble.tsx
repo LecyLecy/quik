@@ -422,26 +422,20 @@ const NoteBubble = memo(function NoteBubble({
 
         {/* Timestamp + Actions */}
 <div className="flex items-center justify-between mt-2">
-  {/* Checkbox centang */}
-  {selectMode ? (
-    <span
-      className={`
-        w-6 h-6 flex items-center justify-center 
-        rounded bg-gray-800 border-2 border-gray-600
-        ${selected ? 'border-green-500 bg-green-700 text-white' : ''}
-        mr-2
-      `}
-    >
-      {selected && (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      )}
-    </span>
-  ) : (
-    <span className="w-6 h-6 mr-2" />
+  {/* Selection checkbox - only shown in select mode */}
+  {selectMode && (
+    <div className="flex items-center">
+      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-2
+        ${selected ? 'bg-green-500 border-green-500' : 'border-gray-400 bg-gray-800'}`}>
+        {selected && (
+          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+      </div>
+    </div>
   )}
-
+  
   {/* Timestamp + Actions */}
   <div className="flex-1 flex justify-end items-center gap-2 text-xs text-gray-400">
     <span>
@@ -464,7 +458,7 @@ const NoteBubble = memo(function NoteBubble({
           setDownloadTarget(bubble.contents[0])
           setDownloadModalOpen(true)
         }}
-        className="w-6 h-6 flex items-center justify-center bg-green-600 hover:bg-green-500 rounded text-white transition-colors"
+        className="w-6 h-6 flex items-center justify-center bg-green-600 hover:bg-green-500 rounded text-white transition-colors cursor-pointer"
         disabled={selectMode}
         title="Download"
       >
@@ -478,7 +472,7 @@ const NoteBubble = memo(function NoteBubble({
       <button
         onClick={() => onRequestEditTime && onRequestEditTime(bubble)}
         disabled={!onRequestEditTime || selectMode}
-        className="w-6 h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-500 rounded text-white disabled:opacity-50 transition-colors"
+        className="w-6 h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-500 rounded text-white disabled:opacity-50 transition-colors cursor-pointer"
         title="Edit Time"
       >
         <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -491,7 +485,7 @@ const NoteBubble = memo(function NoteBubble({
       <button
         onClick={() => onRequestEdit && onRequestEdit(bubble)}
         disabled={!onRequestEdit || selectMode}
-        className="w-6 h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-500 rounded text-white disabled:opacity-50 transition-colors"
+        className="w-6 h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-500 rounded text-white disabled:opacity-50 transition-colors cursor-pointer"
         title="Edit"
       >
         <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -504,7 +498,7 @@ const NoteBubble = memo(function NoteBubble({
     {bubble.description && !selectMode && (
       <button
         onClick={handleCopy}
-        className="w-6 h-6 flex items-center justify-center bg-gray-600 hover:bg-gray-500 rounded text-white transition-colors"
+        className="w-6 h-6 flex items-center justify-center bg-gray-600 hover:bg-gray-500 rounded text-white transition-colors cursor-pointer"
         title="Copy description"
       >
         <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -519,7 +513,7 @@ const NoteBubble = memo(function NoteBubble({
         <button
           onClick={() => onMoveUp && onMoveUp(bubble)}
           disabled={isFirst || !onMoveUp}
-          className="w-6 h-6 flex items-center justify-center bg-purple-600 hover:bg-purple-500 rounded text-white disabled:opacity-30 transition-colors"
+          className="w-6 h-6 flex items-center justify-center bg-purple-600 hover:bg-purple-500 rounded text-white disabled:opacity-30 transition-colors cursor-pointer"
           title="Move up"
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -529,7 +523,7 @@ const NoteBubble = memo(function NoteBubble({
         <button
           onClick={() => onMoveDown && onMoveDown(bubble)}
           disabled={isLast || !onMoveDown}
-          className="w-6 h-6 flex items-center justify-center bg-purple-600 hover:bg-purple-500 rounded text-white disabled:opacity-30 transition-colors"
+          className="w-6 h-6 flex items-center justify-center bg-purple-600 hover:bg-purple-500 rounded text-white disabled:opacity-30 transition-colors cursor-pointer"
           title="Move down"
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -542,7 +536,7 @@ const NoteBubble = memo(function NoteBubble({
     <button
       onClick={() => onRequestDelete && onRequestDelete(bubble)}
       disabled={!onRequestDelete || selectMode}
-      className="w-6 h-6 flex items-center justify-center bg-red-600 hover:bg-red-500 rounded text-white disabled:opacity-50 transition-colors"
+      className="w-6 h-6 flex items-center justify-center bg-red-600 hover:bg-red-500 rounded text-white disabled:opacity-50 transition-colors cursor-pointer"
       title="Delete"
     >
       <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">

@@ -345,7 +345,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
 
               <button
                 onClick={() => handleRemoveUpload(item.id)}
-                className="absolute top-1 right-1 bg-red-600 rounded-full w-6 h-6 text-xs text-white flex items-center justify-center"
+                className="absolute top-1 right-1 bg-red-600 rounded-full w-6 h-6 text-xs text-white flex items-center justify-center cursor-pointer"
                 title="Remove"
               >
                 ×
@@ -371,7 +371,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
             <>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded transition-colors"
+                className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded transition-colors cursor-pointer"
                 title="Upload files"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -383,6 +383,8 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
                 ref={fileInputRef}
                 className="hidden"
                 onChange={handleFileSelect}
+                accept="image/*,video/*,application/pdf,.doc,.docx,.txt"
+                multiple
               />
             </>
           )}
@@ -390,7 +392,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
           {!editingNote && (
             <button
               onClick={() => setIsCountdownMode((prev) => !prev)}
-              className={`p-2 rounded transition-colors ${
+              className={`p-2 rounded transition-colors cursor-pointer ${
                 isCountdownMode ? 'bg-teal-600 hover:bg-teal-500 text-white' : 'bg-gray-700 hover:bg-gray-600 text-white'
               }`}
               title={isCountdownMode ? 'Switch to normal note' : 'Create countdown'}
@@ -406,7 +408,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
             <button
               onClick={onEditCancelled}
               disabled={loading}
-              className="bg-gray-600 hover:bg-gray-500 text-white p-2 rounded disabled:opacity-50 transition-colors"
+              className="bg-gray-600 hover:bg-gray-500 text-white p-2 rounded disabled:opacity-50 transition-colors cursor-pointer"
               title="Cancel"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -419,7 +421,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
             disabled={loading}
             className={`${
               editingNote ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'
-            } text-white p-2 rounded disabled:opacity-50 transition-colors`}
+            } text-white p-2 rounded disabled:opacity-50 transition-colors cursor-pointer`}
             title={editingNote ? 'Save changes' : 'Send note'}
           >
             {loading ? (

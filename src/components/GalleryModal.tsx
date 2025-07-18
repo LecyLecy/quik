@@ -25,9 +25,9 @@ export default function GalleryModal({
 }: GalleryModalProps) {
   return (
     <BaseModal isOpen={open} onClose={onClose} showBackButton={false}>
-      <div className="bg-[#1e1e1e] rounded-xl shadow-2xl border border-gray-700 mx-auto max-w-fit min-w-[300px] max-w-[95vw] sm:max-w-[85vw] lg:max-w-[800px]">
+      <div className="bg-[#1e1e1e] rounded-xl shadow-2xl border border-gray-700 mx-auto max-w-fit min-w-[300px] max-w-[95vw] sm:max-w-[85vw] lg:max-w-[800px] max-h-[90vh] flex flex-col">
         {/* Header: Back + Description */}
-        <div className="flex items-center px-4 py-3 gap-3 border-b border-gray-700 bg-[#1e1e1e] rounded-t-xl">
+        <div className="flex items-center px-4 py-3 gap-3 border-b border-gray-700 bg-[#1e1e1e] rounded-t-xl flex-shrink-0">
           <button
             onClick={onClose}
             className="text-white bg-gray-800 hover:bg-gray-700 p-2 rounded-lg transition-colors flex items-center justify-center"
@@ -46,7 +46,7 @@ export default function GalleryModal({
         </div>
         
         {/* Content: Grid Gallery */}
-        <div className="p-4">
+        <div className="p-4 overflow-y-auto flex-1 modal-content">
           <div className={`grid gap-3 ${
             items.length === 1 ? 'grid-cols-1' : 
             items.length === 2 ? 'grid-cols-2' : 

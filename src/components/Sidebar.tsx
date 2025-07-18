@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react'
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
-  currentPage: 'notes' | 'sticker'
-  onPageChange: (page: 'notes' | 'sticker') => void
+  currentPage: 'notes' | 'sticker' | 'edit'
+  onPageChange: (page: 'notes' | 'sticker' | 'edit') => void
 }
 
 export default function Sidebar({ isOpen, onClose, currentPage, onPageChange }: SidebarProps) {
@@ -30,10 +30,11 @@ export default function Sidebar({ isOpen, onClose, currentPage, onPageChange }: 
 
   const menuItems = [
     { id: 'notes' as const, label: 'Notes', icon: '📝' },
-    { id: 'sticker' as const, label: 'Sticker', icon: '🎨' }
+    { id: 'sticker' as const, label: 'Sticker', icon: '🎨' },
+    { id: 'edit' as const, label: 'Edit', icon: '✏️' }
   ]
 
-  const handleItemClick = (pageId: 'notes' | 'sticker') => {
+  const handleItemClick = (pageId: 'notes' | 'sticker' | 'edit') => {
     onPageChange(pageId)
     onClose()
   }

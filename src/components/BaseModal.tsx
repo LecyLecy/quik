@@ -49,14 +49,14 @@ export default function BaseModal({
       {showBackButton && (
         <button
           onClick={onClose}
-          className="absolute top-4 left-4 text-white text-sm bg-gray-800 px-3 py-1 rounded hover:bg-gray-700 transition-colors"
+          className="absolute top-4 left-4 text-white text-sm bg-gray-800 px-3 py-1 rounded hover:bg-gray-700 transition-colors z-10"
         >
           {backButtonText}
         </button>
       )}
       
       <div
-        className="relative max-w-full max-h-full"
+        className="relative max-w-full max-h-full overflow-auto modal-content"
         onClick={(e) => e.stopPropagation()}
       >
         {children}
