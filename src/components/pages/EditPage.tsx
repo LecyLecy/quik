@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import Header from '@/components/Header'
+import { supabase } from '@/lib/supabase/client'
+import { saveNoteBubble } from '@/hooks/useSaveNote'
 
 interface EditPageProps {
   uploadedFiles: File[]
@@ -204,10 +206,70 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     onExitEdit()
   }, [onExitEdit])
 
-  const handleConfirmSend = useCallback(() => {
-    alert('Sticker sent successfully!')
-    onExitEdit()
-  }, [onExitEdit])
+  const handleConfirmSend = useCallback(async () => {
+    try {
+      // Convert the File to a proper MediaItem by uploading to Supabase
+      const file = uploadedFiles[0]
+      const fileExtension = file.name.split('.').pop()
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExtension}`
+      
+      // Upload file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('notes-media')
+        .upload(fileName, file)
+      
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        alert('Failed to upload file. Please try again.')
+        return
+      }
+      
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('notes-media')
+        .getPublicUrl(fileName)
+      
+      // Create MediaItem
+      const mediaItem = {
+        id: Math.random().toString(36).substring(2),
+        type: file.type.startsWith('image/') ? 'image' as const : 'video' as const,
+        url: urlData.publicUrl,
+        storagePath: fileName,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        createdAt: new Date().toISOString(),
+        editData: {
+          rotation,
+          scale,
+          position,
+          videoDuration,
+          videoStartTime,
+          videoEndTime
+        }
+      }
+      
+      // Create the note
+      const newNote = {
+        id: Math.random().toString(36).substring(2),
+        description: `Sticker created on ${new Date().toLocaleDateString()}`,
+        contents: [mediaItem],
+        createdAt: new Date().toISOString(),
+        order: Date.now(),
+        isCountdown: false,
+        countdownDate: undefined
+      }
+      
+      // Save to database
+      await saveNoteBubble(newNote)
+      
+      alert('Sticker sent successfully!')
+      onExitEdit()
+    } catch (error) {
+      console.error('Error sending sticker:', error)
+      alert('Failed to send sticker. Please try again.')
+    }
+  }, [uploadedFiles, rotation, scale, position, videoDuration, videoStartTime, videoEndTime, onExitEdit])
 
   const handleBackToEdit = useCallback(() => {
     setShowPreview(false)

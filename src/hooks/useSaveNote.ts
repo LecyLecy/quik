@@ -3,6 +3,8 @@ import type { MediaItem } from '@/types/note'
 import type { NoteBubble } from '@/types/note'
 
 export async function saveNoteBubble(note: NoteBubble) {
+  console.log('Attempting to save note:', note)
+  
   const { data, error } = await supabase
     .from('notes')
     .insert([
@@ -18,7 +20,12 @@ export async function saveNoteBubble(note: NoteBubble) {
       },
     ])
 
-  if (error) throw error
+  if (error) {
+    console.error('Database save error:', error)
+    throw error
+  }
+  
+  console.log('Successfully saved note:', data)
   return data
 }
 
@@ -43,20 +50,32 @@ export async function updateNoteBubble(
 
 
 export async function deleteNoteBubble(note: NoteBubble) {
+  console.log('Attempting to delete note:', note.id)
+  
   if (note.contents.length > 0) {
     // Delete files from storage first
     const paths = note.contents.map((item) => item.storagePath)
+    console.log('Deleting files:', paths)
     const { error } = await supabase.storage.from('notes-media').remove(paths)
-    if (error) console.error('Failed to delete files:', error)
+    if (error) {
+      console.error('Failed to delete files:', error)
+    } else {
+      console.log('Successfully deleted files from storage')
+    }
   }
 
+  console.log('Deleting note from database...')
   const { error } = await supabase
     .from('notes')
     .delete()
     .eq('id', note.id)
-    // Removed user_id check for now
   
-  if (error) throw error
+  if (error) {
+    console.error('Database delete error:', error)
+    throw error
+  }
+  
+  console.log('Successfully deleted note from database')
 }
 
 export async function updateNoteOrder(noteId: string, newOrder: number) {

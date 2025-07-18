@@ -128,13 +128,15 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
 
   // Handle delete
   const handleDelete = useCallback(async (bubble: NoteBubble) => {
+    console.log('🗑️ NotesPage: Starting single delete for bubble:', bubble.id)
     setDeleting(true)
     try {
       await deleteNoteBubble(bubble)
+      console.log('✅ NotesPage: Single delete successful for bubble:', bubble.id)
       await refetch()
       setPendingDelete(null)
     } catch (error) {
-      console.error('Error deleting note:', error)
+      console.error('❌ NotesPage: Error deleting single note:', error)
     } finally {
       setDeleting(false)
     }
@@ -562,20 +564,26 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
               </button>
               <button
                 onClick={async () => {
+                  console.log('🗑️ NotesPage: Starting multi-delete for IDs:', selectedIds)
                   setDeleting(true)
                   try {
                     for (const id of selectedIds) {
                       const bubble = notes.find(b => b.id === id)
                       if (bubble) {
+                        console.log('🗑️ NotesPage: Deleting bubble:', bubble.id)
                         await deleteNoteBubble(bubble)
+                        console.log('✅ NotesPage: Deleted bubble:', bubble.id)
+                      } else {
+                        console.warn('⚠️ NotesPage: Bubble not found for ID:', id)
                       }
                     }
+                    console.log('✅ NotesPage: Multi-delete completed, refetching...')
                     await refetch()
                     setShowMultiDeleteModal(false)
                     setSelectMode(false)
                     setSelectedIds([])
                   } catch (error) {
-                    console.error('Error deleting notes:', error)
+                    console.error('❌ NotesPage: Error deleting notes:', error)
                   } finally {
                     setDeleting(false)
                   }
