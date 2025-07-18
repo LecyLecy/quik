@@ -18,7 +18,6 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
   
   // Video duration controls
   const [videoDuration, setVideoDuration] = useState(3.0)
-  const [videoCurrentTime, setVideoCurrentTime] = useState(0)
   const [videoTotalDuration, setVideoTotalDuration] = useState(0)
   const [videoStartTime, setVideoStartTime] = useState(0)
   const [videoEndTime, setVideoEndTime] = useState(3.0)
@@ -26,28 +25,39 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
   // Video Timeline Drag States
   const [isDraggingTimeline, setIsDraggingTimeline] = useState(false)
   const [dragType, setDragType] = useState<'start' | 'end' | 'bar' | null>(null)
-  const [dragStartX, setDragStartX] = useState(0)
-  const [dragStartValue, setDragStartValue] = useState(0)
-  const [dragStartTime, setDragStartTime] = useState(0)
   const [shouldUpdateVideo, setShouldUpdateVideo] = useState(true)
 
-  // Reset all edit parameters
-  const resetEditParameters = useCallback(() => {
-    setRotation(0)
-    setScale(100)
-    setPosition({ x: 0, y: 0 })
-    setVideoDuration(3.0)
-    setVideoStartTime(0)
-    setVideoEndTime(3.0)
-  }, [])
+  // Handle global mouse events for content dragging
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!isDraggingContent) return
+      e.preventDefault()
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      })
+    }
+
+    const handleGlobalMouseUp = () => {
+      setIsDraggingContent(false)
+    }
+
+    if (isDraggingContent) {
+      document.addEventListener('mousemove', handleGlobalMouseMove)
+      document.addEventListener('mouseup', handleGlobalMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove)
+      document.removeEventListener('mouseup', handleGlobalMouseUp)
+    }
+  }, [isDraggingContent, dragStart])
 
   // Handle content dragging
   const handleContentMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
     setIsDraggingContent(true)
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
-    })
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
   }, [position])
 
   const handleContentMouseMove = useCallback((e: React.MouseEvent) => {
@@ -65,95 +75,51 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
 
   // Handle rotation
   const handleRotateClick = useCallback(() => {
-    setRotation(prev => (prev + 90) % 360)
-  }, [])
+    const newRotation = (rotation + 90) % 360
+    setRotation(newRotation)
+  }, [rotation])
 
-  // Video handlers
+  // Video duration handlers
   const handleVideoLoadedData = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.target as HTMLVideoElement
     const duration = video.duration
     setVideoTotalDuration(duration)
     
-    // Set initial end time based on available duration
     const defaultEnd = Math.min(3.0, duration)
     setVideoEndTime(defaultEnd)
     setVideoDuration(defaultEnd)
-    
-    console.log('Video loaded, duration:', duration)
   }, [])
 
-  const handleDurationChange = useCallback((newDuration: number) => {
-    // Ensure duration is within bounds
-    const clampedDuration = Math.max(0.1, Math.min(4.9, newDuration))
-    setVideoDuration(clampedDuration)
-    
-    // Adjust end time if needed
-    const maxEndTime = Math.min(videoStartTime + clampedDuration, videoTotalDuration)
-    setVideoEndTime(maxEndTime)
-    
-    console.log('Duration changed to:', clampedDuration)
-  }, [videoStartTime, videoTotalDuration])
-
-  const handleStartTimeChange = useCallback((newStartTime: number) => {
-    const clampedStartTime = Math.max(0, Math.min(videoTotalDuration - 0.1, newStartTime))
-    setVideoStartTime(clampedStartTime)
-    
-    // Adjust end time to maintain duration
-    const newEndTime = Math.min(clampedStartTime + videoDuration, videoTotalDuration)
-    setVideoEndTime(newEndTime)
-    
-    console.log('Start time changed to:', clampedStartTime)
-  }, [videoDuration, videoTotalDuration])
-
-  const handleEndTimeChange = useCallback((newEndTime: number) => {
-    const clampedEndTime = Math.max(videoStartTime + 0.1, Math.min(videoTotalDuration, newEndTime))
-    setVideoEndTime(clampedEndTime)
-    
-    // Update duration based on new end time
-    const newDuration = clampedEndTime - videoStartTime
-    setVideoDuration(newDuration)
-    
-    console.log('End time changed to:', clampedEndTime)
-  }, [videoStartTime, videoTotalDuration])
-
-  // Handle video time updates for looping
   const handleVideoTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.target as HTMLVideoElement
     
-    // Don't update video time if user is dragging slider
     if (isDraggingTimeline || !shouldUpdateVideo) return
     
-    // If we're in edit mode and video time exceeds end time, loop back to start
     if (video.currentTime >= videoEndTime) {
       video.currentTime = videoStartTime
     }
     
-    // Also ensure video doesn't go before start time
     if (video.currentTime < videoStartTime) {
       video.currentTime = videoStartTime
     }
   }, [videoStartTime, videoEndTime, isDraggingTimeline, shouldUpdateVideo])
 
-  // Handle video play event to ensure it starts at the correct time
   const handleVideoPlay = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.target as HTMLVideoElement
     
-    // When video plays in edit mode, ensure it starts at the start time
     if (video.currentTime < videoStartTime || video.currentTime >= videoEndTime) {
       video.currentTime = videoStartTime
     }
   }, [videoStartTime, videoEndTime])
 
-  // Video Timeline Drag Handlers
+  // Timeline drag handlers
   const handleDragStart = useCallback((e: React.MouseEvent, type: 'start' | 'end' | 'bar') => {
     e.preventDefault()
     e.stopPropagation()
     
-    console.log('Drag started:', type)
-    
     setIsDraggingTimeline(true)
     setDragType(type)
-    setShouldUpdateVideo(false) // Stop video updates during drag
+    setShouldUpdateVideo(false)
     
     const startX = e.clientX
     let startValue = 0
@@ -166,14 +132,11 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
       startValue = videoStartTime
     }
     
-    // Handle mouse move
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - startX
       const timelineElement = document.querySelector('.timeline-track')
       const timelineWidth = timelineElement ? timelineElement.clientWidth : 300
       const deltaTime = (deltaX / timelineWidth) * videoTotalDuration
-      
-      console.log('Dragging:', type, deltaX, deltaTime)
       
       if (type === 'start') {
         const newStartTime = Math.max(0, Math.min(videoEndTime - 0.1, startValue + deltaTime))
@@ -203,14 +166,12 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     }
     
     const handleMouseUp = () => {
-      console.log('Drag ended')
       setIsDraggingTimeline(false)
       setDragType(null)
-      setShouldUpdateVideo(true) // Resume video updates after drag
+      setShouldUpdateVideo(true)
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
       
-      // Update video position after drag ends
       const videoElements = document.querySelectorAll('video')
       videoElements.forEach(video => {
         if (video.src && video.src.includes('blob:')) {
@@ -222,6 +183,23 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
   }, [videoStartTime, videoEndTime, videoTotalDuration, videoDuration])
+
+  // Save and cancel handlers
+  const handleSaveChanges = useCallback(() => {
+    console.log('Saving changes:', { rotation, scale, position, videoDuration, videoStartTime, videoEndTime })
+    alert('Changes saved successfully!')
+    onExitEdit()
+  }, [rotation, scale, position, videoDuration, videoStartTime, videoEndTime, onExitEdit])
+
+  const handleCancelEdit = useCallback(() => {
+    setRotation(0)
+    setScale(100)
+    setPosition({ x: 0, y: 0 })
+    setVideoDuration(3.0)
+    setVideoStartTime(0)
+    setVideoEndTime(3.0)
+    onExitEdit()
+  }, [onExitEdit])
 
   // Auto-play video with looping
   useEffect(() => {
@@ -236,44 +214,19 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     }
   }, [uploadedFiles, videoStartTime])
 
-  // Reset video time when start time changes
-  useEffect(() => {
-    if (uploadedFiles.length > 0 && uploadedFiles[0].type.startsWith('video/')) {
-      const videoElements = document.querySelectorAll('video')
-      videoElements.forEach(video => {
-        if (video.src && video.src.includes('blob:')) {
-          video.currentTime = videoStartTime
-        }
-      })
-    }
-  }, [videoStartTime, uploadedFiles])
-
-  const handleSaveChanges = useCallback(() => {
-    // TODO: Apply all edits and save
-    console.log('Saving changes:', { rotation, scale, position, videoDuration, videoStartTime, videoEndTime })
-    alert('Changes saved successfully!')
-    onExitEdit()
-  }, [rotation, scale, position, videoDuration, videoStartTime, videoEndTime, onExitEdit])
-
-  const handleCancelEdit = useCallback(() => {
-    resetEditParameters()
-    onExitEdit()
-  }, [resetEditParameters, onExitEdit])
-
   if (uploadedFiles.length === 0) {
     return (
-      <div className="flex flex-col h-screen bg-gray-900 text-white">
+      <div className="flex flex-col h-screen bg-black text-white">
+        <Header 
+          emoji="✏️"
+          title="Edit Sticker"
+          showBackButton={true}
+          onBackClick={onExitEdit}
+          onMenuToggle={() => {}}
+          sidebarOpen={false}
+        />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-xl font-bold mb-4">No Content to Edit</h2>
-            <p className="text-gray-400 mb-6">Please upload some content first.</p>
-            <button
-              onClick={onExitEdit}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
-            >
-              Go to Upload
-            </button>
-          </div>
+          <p className="text-gray-400">No file to edit</p>
         </div>
       </div>
     )
@@ -281,61 +234,56 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
 
   return (
     <div className="flex flex-col h-screen bg-black text-white">
-      {/* Header */}
       <Header 
         emoji="✏️"
-        title="Edit"
-        onMenuToggle={() => {}} // Not used in EditPage
-        sidebarOpen={false} // Not used in EditPage
+        title="Edit Sticker"
         showBackButton={true}
         onBackClick={onExitEdit}
-        rightContent={
-          <div className="flex gap-2">
-            <button
-              onClick={handleCancelEdit}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveChanges}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer"
-            >
-              Save
-            </button>
-          </div>
-        }
+        onMenuToggle={() => {}}
+        sidebarOpen={false}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full flex bg-black">
-          {/* Preview Area */}
-          <div className="flex-1 flex items-center justify-center bg-[#1a1a1a] relative">
-            <div className="relative">
-              {/* Blue box outline - 512x512 */}
-              <div className="w-[512px] h-[512px] border-2 border-dashed border-blue-500 relative">
-                {/* Content inside the blue box */}
-                <div
-                  className="absolute cursor-move"
-                  style={{
-                    left: `calc(50% + ${position.x}px)`,
-                    top: `calc(50% + ${position.y}px)`,
-                    transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${scale / 100})`,
-                    transformOrigin: 'center'
-                  }}
-                  onMouseDown={handleContentMouseDown}
-                  onMouseMove={handleContentMouseMove}
-                  onMouseUp={handleContentMouseUp}
-                >
-                  {uploadedFiles[0].type.startsWith('image/') ? (
-                    <img
-                      src={URL.createObjectURL(uploadedFiles[0])}
-                      alt="Sticker preview"
-                      className="block"
-                      style={{ width: '256px', height: '256px', objectFit: 'contain' }}
-                    />
-                  ) : (
+      <div className="flex-1 overflow-y-auto p-6 bg-black">
+        <div className="max-w-md mx-auto">
+          <div className="bg-[#1e1e1e] rounded-lg p-6">
+            {/* Edit Preview Container - 512x512 with crop */}
+            <div className="relative bg-[#2a2a2a] rounded-lg overflow-hidden flex items-center justify-center" style={{ width: '384px', height: '384px', margin: '0 auto' }}>
+              {/* 512x512 Crop Box */}
+              <div 
+                className="relative border-2 border-blue-400 border-dashed bg-transparent overflow-hidden cursor-move"
+                style={{ width: '256px', height: '256px' }}
+                onMouseMove={handleContentMouseMove}
+                onMouseUp={handleContentMouseUp}
+                onMouseLeave={handleContentMouseUp}
+              >
+                {/* Content that can be dragged */}
+                {uploadedFiles[0].type.startsWith('image/') ? (
+                  <img 
+                    src={URL.createObjectURL(uploadedFiles[0])}
+                    alt="Current sticker"
+                    className="absolute cursor-move select-none"
+                    style={{ 
+                      transform: `rotate(${rotation}deg) scale(${scale / 100})`,
+                      left: `calc(50% + ${position.x}px)`,
+                      top: `calc(50% + ${position.y}px)`,
+                      transformOrigin: 'center',
+                      translate: '-50% -50%'
+                    }}
+                    onMouseDown={handleContentMouseDown}
+                    draggable={false}
+                  />
+                ) : (
+                  <div 
+                    className="absolute cursor-move select-none"
+                    style={{ 
+                      transform: `rotate(${rotation}deg) scale(${scale / 100})`,
+                      left: `calc(50% + ${position.x}px)`,
+                      top: `calc(50% + ${position.y}px)`,
+                      transformOrigin: 'center',
+                      translate: '-50% -50%'
+                    }}
+                    onMouseDown={handleContentMouseDown}
+                  >
                     <video 
                       src={URL.createObjectURL(uploadedFiles[0])}
                       className="block"
@@ -345,24 +293,21 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
                       onTimeUpdate={handleVideoTimeUpdate}
                       onPlay={handleVideoPlay}
                     />
-                  )}
+                  </div>
+                )}
+                
+                {/* Crop Box Info */}
+                <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                  512x512
                 </div>
               </div>
               
-              {/* Crop Box Info */}
-              <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-none">
-                512x512
+              {/* Instructions */}
+              <div className="absolute bottom-2 left-2 right-2 text-center text-gray-400 text-xs">
+                Drag to position • Only content inside the blue box will be sent
               </div>
             </div>
-            
-            {/* Instructions */}
-            <div className="absolute bottom-2 left-2 right-2 text-center text-gray-400 text-xs">
-              Drag to position • Only content inside the blue box will be sent
-            </div>
-          </div>
 
-          {/* Controls Panel */}
-          <div className="w-80 bg-black border-l border-gray-800 p-6 overflow-y-auto">
             {/* Edit Options */}
             <div className="space-y-4 mt-6">
               <div className="flex justify-center">
@@ -460,16 +405,16 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-3 mt-8">
+            <div className="space-y-3 mt-6">
               <button
                 onClick={handleSaveChanges}
                 className="w-full py-3 px-4 rounded-lg font-medium bg-green-600 hover:bg-green-700 text-white transition-colors"
               >
-                Save Changes
+                Send
               </button>
               <button
                 onClick={handleCancelEdit}
-                className="w-full py-3 px-4 rounded-lg font-medium bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+                className="w-full py-2 px-4 rounded-lg font-medium bg-gray-600 hover:bg-gray-700 text-white transition-colors"
               >
                 Cancel
               </button>
