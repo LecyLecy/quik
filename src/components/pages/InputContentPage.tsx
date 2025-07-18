@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 
 interface InputContentPageProps {
   onMenuToggle: () => void
+  sidebarOpen: boolean
   uploadedFiles: File[]
   onFileUpload: (files: File[]) => void
   onEditMode: () => void
@@ -12,6 +13,7 @@ interface InputContentPageProps {
 
 export default function InputContentPage({ 
   onMenuToggle, 
+  sidebarOpen,
   uploadedFiles, 
   onFileUpload, 
   onEditMode, 
@@ -94,7 +96,11 @@ export default function InputContentPage({
               className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                {!sidebarOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                )}
               </svg>
             </button>
             <h1 className="text-xl font-bold">Upload Content</h1>

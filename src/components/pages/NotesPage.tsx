@@ -26,9 +26,10 @@ function useDebounce<T>(value: T, delay: number): T {
 
 interface NotesPageProps {
   onMenuToggle: () => void
+  sidebarOpen: boolean
 }
 
-export default function NotesPage({ onMenuToggle }: NotesPageProps) {
+export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps) {
   const { notes, loading, refetch, setNotes } = useNotes()
   const [pendingDelete, setPendingDelete] = useState<NoteBubble | null>(null)
   const [editingNote, setEditingNote] = useState<NoteBubble | null>(null)
@@ -313,7 +314,7 @@ export default function NotesPage({ onMenuToggle }: NotesPageProps) {
               className="text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {!selectMode ? (
+                {!sidebarOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 ) : (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

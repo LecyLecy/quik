@@ -6,7 +6,7 @@ interface SidebarProps {
   isOpen: boolean
   onClose: () => void
   currentPage: 'notes' | 'sticker' | 'edit'
-  onPageChange: (page: 'notes' | 'sticker' | 'edit') => void
+  onPageChange: (page: 'notes' | 'sticker') => void
 }
 
 export default function Sidebar({ isOpen, onClose, currentPage, onPageChange }: SidebarProps) {
@@ -30,11 +30,10 @@ export default function Sidebar({ isOpen, onClose, currentPage, onPageChange }: 
 
   const menuItems = [
     { id: 'notes' as const, label: 'Notes', icon: '📝' },
-    { id: 'sticker' as const, label: 'Sticker', icon: '🎨' },
-    { id: 'edit' as const, label: 'Edit', icon: '✏️' }
+    { id: 'sticker' as const, label: 'Sticker', icon: '🎨' }
   ]
 
-  const handleItemClick = (pageId: 'notes' | 'sticker' | 'edit') => {
+  const handleItemClick = (pageId: 'notes' | 'sticker') => {
     onPageChange(pageId)
     onClose()
   }
@@ -43,10 +42,10 @@ export default function Sidebar({ isOpen, onClose, currentPage, onPageChange }: 
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - only blur content below header */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/70 backdrop-blur-md z-30 transition-opacity duration-300"
+          className="fixed top-16 left-0 right-0 bottom-0 bg-black/70 backdrop-blur-md z-30 transition-opacity duration-300"
           onClick={(e) => {
             e.stopPropagation()
             onClose()
@@ -59,14 +58,11 @@ export default function Sidebar({ isOpen, onClose, currentPage, onPageChange }: 
         data-sidebar
         onClick={(e) => e.stopPropagation()}
         className={`
-          fixed top-0 left-0 h-full w-280 sm:w-80 bg-black border-r border-gray-700 z-40
+          fixed top-16 left-0 h-[calc(100vh-4rem)] w-280 sm:w-80 bg-black border-r border-gray-700 z-40
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* Header Spacer - to avoid covering header */}
-        <div className="h-16 bg-black"></div>
-        
         {/* Menu Items */}
         <div className="p-4">
           {menuItems.map((item, index) => (
