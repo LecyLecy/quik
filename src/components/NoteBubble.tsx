@@ -187,7 +187,7 @@ const NoteBubble = memo(function NoteBubble({
     
     try {
       await navigator.clipboard.writeText(bubble.description)
-    } catch (error) {
+    } catch {
       // Fallback for older browsers
       const textArea = document.createElement('textarea')
       textArea.value = bubble.description

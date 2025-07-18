@@ -2,9 +2,6 @@ import { supabase } from '@/lib/supabase/client'
 import type { MediaItem } from '@/types/note'
 import type { NoteBubble } from '@/types/note'
 
-// Since you're the only user, we'll use a fixed user ID
-const FIXED_USER_ID = 'your-fixed-user-id-123'
-
 export async function saveNoteBubble(note: NoteBubble) {
   const { data, error } = await supabase
     .from('notes')
@@ -31,7 +28,7 @@ export async function updateNoteBubble(
   contents?: MediaItem[],
   countdownDate?: string
 ) {
-  const updateObj: any = { description }
+  const updateObj: { description: string; contents?: MediaItem[]; countdown_date?: string } = { description }
   if (contents !== undefined) updateObj.contents = contents
   if (countdownDate !== undefined) updateObj.countdown_date = countdownDate
 

@@ -27,9 +27,6 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
   const [dragType, setDragType] = useState<'start' | 'end' | 'bar' | null>(null)
   const [shouldUpdateVideo, setShouldUpdateVideo] = useState(true)
   
-  // Preview Modal State
-  const [showPreviewModal, setShowPreviewModal] = useState(false)
-  
   // Preview state
   const [showPreview, setShowPreview] = useState(false)
 
@@ -85,7 +82,7 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     setRotation(newRotation)
   }, [rotation])
 
-  // Video duration handlers
+  // Video event handlers
   const handleVideoLoadedData = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.target as HTMLVideoElement
     const duration = video.duration
@@ -229,6 +226,53 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     }
   }, [uploadedFiles, videoStartTime])
 
+  // Render content helper
+  const renderContent = useCallback((interactive: boolean = true) => {
+    if (uploadedFiles.length === 0) return null
+    
+    const file = uploadedFiles[0]
+    const commonStyle = {
+      transform: `rotate(${rotation}deg) scale(${scale / 100})`,
+      left: `calc(50% + ${position.x}px)`,
+      top: `calc(50% + ${position.y}px)`,
+      transformOrigin: 'center',
+      translate: '-50% -50%'
+    }
+
+    if (file.type.startsWith('image/')) {
+      return (
+        <img 
+          src={URL.createObjectURL(file)}
+          alt="Sticker content"
+          className={`absolute select-none ${interactive ? 'cursor-move' : 'pointer-events-none'}`}
+          style={commonStyle}
+          onMouseDown={interactive ? handleContentMouseDown : undefined}
+          draggable={false}
+        />
+      )
+    } else {
+      return (
+        <div 
+          className={`absolute select-none ${interactive ? 'cursor-move' : 'pointer-events-none'}`}
+          style={commonStyle}
+          onMouseDown={interactive ? handleContentMouseDown : undefined}
+        >
+          <video 
+            src={URL.createObjectURL(file)}
+            className="block"
+            style={{ width: '256px', height: '256px', objectFit: 'contain' }}
+            muted
+            onLoadedData={interactive ? handleVideoLoadedData : undefined}
+            onTimeUpdate={interactive ? handleVideoTimeUpdate : undefined}
+            onPlay={interactive ? handleVideoPlay : undefined}
+            autoPlay={!interactive}
+            loop={!interactive}
+          />
+        </div>
+      )
+    }
+  }, [uploadedFiles, rotation, scale, position, handleContentMouseDown, handleVideoLoadedData, handleVideoTimeUpdate, handleVideoPlay])
+
   if (uploadedFiles.length === 0) {
     return (
       <div className="flex flex-col h-screen bg-black text-white">
@@ -340,40 +384,7 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
                 className="relative overflow-hidden"
                 style={{ width: '256px', height: '256px' }}
               >
-                {uploadedFiles[0].type.startsWith('image/') ? (
-                  <img 
-                    src={URL.createObjectURL(uploadedFiles[0])}
-                    alt="Final sticker"
-                    className="absolute select-none pointer-events-none"
-                    style={{ 
-                      transform: `rotate(${rotation}deg) scale(${scale / 100})`,
-                      left: `calc(50% + ${position.x}px)`,
-                      top: `calc(50% + ${position.y}px)`,
-                      transformOrigin: 'center',
-                      translate: '-50% -50%'
-                    }}
-                  />
-                ) : (
-                  <div 
-                    className="absolute select-none pointer-events-none"
-                    style={{ 
-                      transform: `rotate(${rotation}deg) scale(${scale / 100})`,
-                      left: `calc(50% + ${position.x}px)`,
-                      top: `calc(50% + ${position.y}px)`,
-                      transformOrigin: 'center',
-                      translate: '-50% -50%'
-                    }}
-                  >
-                    <video 
-                      src={URL.createObjectURL(uploadedFiles[0])}
-                      className="block"
-                      style={{ width: '256px', height: '256px', objectFit: 'contain' }}
-                      muted
-                      autoPlay
-                      loop
-                    />
-                  </div>
-                )}
+                {renderContent(false)}
               </div>
               
               {/* Size indicator */}
@@ -432,44 +443,7 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
                 onMouseLeave={handleContentMouseUp}
               >
                 {/* Content that can be dragged */}
-                {uploadedFiles[0].type.startsWith('image/') ? (
-                  <img 
-                    src={URL.createObjectURL(uploadedFiles[0])}
-                    alt="Current sticker"
-                    className="absolute cursor-move select-none"
-                    style={{ 
-                      transform: `rotate(${rotation}deg) scale(${scale / 100})`,
-                      left: `calc(50% + ${position.x}px)`,
-                      top: `calc(50% + ${position.y}px)`,
-                      transformOrigin: 'center',
-                      translate: '-50% -50%'
-                    }}
-                    onMouseDown={handleContentMouseDown}
-                    draggable={false}
-                  />
-                ) : (
-                  <div 
-                    className="absolute cursor-move select-none"
-                    style={{ 
-                      transform: `rotate(${rotation}deg) scale(${scale / 100})`,
-                      left: `calc(50% + ${position.x}px)`,
-                      top: `calc(50% + ${position.y}px)`,
-                      transformOrigin: 'center',
-                      translate: '-50% -50%'
-                    }}
-                    onMouseDown={handleContentMouseDown}
-                  >
-                    <video 
-                      src={URL.createObjectURL(uploadedFiles[0])}
-                      className="block"
-                      style={{ width: '256px', height: '256px', objectFit: 'contain' }}
-                      muted
-                      onLoadedData={handleVideoLoadedData}
-                      onTimeUpdate={handleVideoTimeUpdate}
-                      onPlay={handleVideoPlay}
-                    />
-                  </div>
-                )}
+                {renderContent(true)}
                 
                 {/* Crop Box Info */}
                 <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-none">

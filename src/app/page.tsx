@@ -10,7 +10,6 @@ export default function HomePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState<'notes' | 'sticker' | 'edit'>('notes')
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
-  const [isEditMode, setIsEditMode] = useState(false)
 
   const handlePageChange = (page: 'notes' | 'sticker') => {
     setCurrentPage(page)
@@ -23,19 +22,11 @@ export default function HomePage() {
   }
 
   const handleEditMode = () => {
-    setIsEditMode(true)
     setCurrentPage('edit')
   }
 
   const handleExitEdit = () => {
-    setIsEditMode(false)
     setCurrentPage('sticker')
-  }
-
-  const handleBackToNotes = () => {
-    setUploadedFiles([])
-    setIsEditMode(false)
-    setCurrentPage('notes')
   }
 
   const handleClearFiles = () => {
@@ -65,7 +56,6 @@ export default function HomePage() {
           uploadedFiles={uploadedFiles}
           onFileUpload={handleFileUpload}
           onEditMode={handleEditMode}
-          onBackToNotes={handleBackToNotes}
           onClearFiles={handleClearFiles}
         />
       )}

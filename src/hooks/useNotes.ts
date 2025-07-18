@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import type { NoteBubble } from '@/types/note'
+import type { NoteBubble, MediaItem } from '@/types/note'
 
 export function useNotes() {
   const [notes, setNotes] = useState<NoteBubble[]>([])
@@ -18,14 +18,22 @@ export function useNotes() {
       if (error) throw error
       if (!data) return
 
-      const mappedNotes: NoteBubble[] = data.map((note: any) => ({
+      const mappedNotes: NoteBubble[] = data.map((note: {
+        id: string
+        description: string
+        contents: MediaItem[]
+        created_at: string
+        order: number
+        is_countdown?: boolean
+        countdown_date?: string
+      }) => ({
         id: note.id,
         description: note.description,
         contents: note.contents,
         createdAt: note.created_at,
         order: note.order ?? null,
         isCountdown: note.is_countdown ?? false,
-        countdownDate: note.countdown_date ?? null,
+        countdownDate: note.countdown_date ?? undefined,
       }))
 
       setNotes(mappedNotes)

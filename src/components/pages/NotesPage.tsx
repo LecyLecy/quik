@@ -421,7 +421,7 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
             {searchText ? 'No notes found.' : 'No notes yet.'}
           </div>
         ) : (
-          filteredNotes.map((bubble, index) => {
+          filteredNotes.map((bubble) => {
             const selected = selectMode && selectedIds.includes(bubble.id)
             const originalIndex = notes.findIndex(n => n.id === bubble.id)
             
@@ -502,7 +502,7 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
             </p>
             {pendingDelete.description && (
               <p className="text-gray-400 text-sm mb-4 italic">
-                "{pendingDelete.description.slice(0, 100)}"
+                &quot;{pendingDelete.description.slice(0, 100)}&quot;
               </p>
             )}
             <div className="flex justify-center gap-4">
@@ -597,7 +597,7 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-600">
               <h3 className="text-lg font-semibold text-white">
-                Search Results for "{searchText}" ({filteredNotes.length} found)
+                Search Results for &quot;{searchText}&quot; ({filteredNotes.length} found)
               </h3>
               <button
                 onClick={handleSearchToggle}

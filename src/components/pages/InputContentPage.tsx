@@ -9,7 +9,6 @@ interface InputContentPageProps {
   uploadedFiles: File[]
   onFileUpload: (files: File[]) => void
   onEditMode: () => void
-  onBackToNotes: () => void
   onClearFiles: () => void
 }
 
@@ -19,11 +18,8 @@ export default function InputContentPage({
   uploadedFiles, 
   onFileUpload, 
   onEditMode, 
-  onBackToNotes,
   onClearFiles 
 }: InputContentPageProps) {
-  const [stickerPacks, setStickerPacks] = useState<Array<{ id: string; name: string; files: File[] }>>([])
-  const [currentPackName, setCurrentPackName] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -75,12 +71,6 @@ export default function InputContentPage({
       fileInputRef.current.value = ''
     }
   }, [onClearFiles])
-
-  const handleSendToWhatsApp = useCallback(() => {
-    // TODO: Implement WhatsApp sending logic
-    console.log('Sending to WhatsApp:', uploadedFiles)
-    alert('Sending to WhatsApp!')
-  }, [uploadedFiles])
 
   const handleUnlinkWhatsApp = useCallback(() => {
     // TODO: Implement WhatsApp unlinking logic
