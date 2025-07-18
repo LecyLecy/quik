@@ -10,6 +10,7 @@ interface InputContentPageProps {
   onFileUpload: (files: File[]) => void
   onEditMode: () => void
   onBackToNotes: () => void
+  onClearFiles: () => void
 }
 
 export default function InputContentPage({ 
@@ -18,7 +19,8 @@ export default function InputContentPage({
   uploadedFiles, 
   onFileUpload, 
   onEditMode, 
-  onBackToNotes 
+  onBackToNotes,
+  onClearFiles 
 }: InputContentPageProps) {
   const [stickerPacks, setStickerPacks] = useState<Array<{ id: string; name: string; files: File[] }>>([])
   const [currentPackName, setCurrentPackName] = useState('')
@@ -68,11 +70,11 @@ export default function InputContentPage({
   }, [uploadedFiles, onEditMode])
 
   const handleClearFiles = useCallback(() => {
-    onBackToNotes()
+    onClearFiles()
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-  }, [onBackToNotes])
+  }, [onClearFiles])
 
   const handleSendToWhatsApp = useCallback(() => {
     // TODO: Implement WhatsApp sending logic
@@ -106,35 +108,44 @@ export default function InputContentPage({
                 <h2 className="text-xl font-bold text-white mb-6">WhatsApp Sticker</h2>
                 
                 {/* Image Preview with overlay buttons */}
-                <div className="relative inline-block mb-4">
-                  <div className="w-64 h-64 bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
+                <div className="relative mb-4">
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-6 text-center bg-gray-700/20 min-h-[200px] flex items-center justify-center transition-colors ${
+                      isDragging
+                        ? 'border-blue-500 bg-blue-50/10'
+                        : 'border-gray-600 hover:border-gray-500'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
                     {uploadedFiles[0].type.startsWith('image/') ? (
                       <img
                         src={URL.createObjectURL(uploadedFiles[0])}
                         alt={uploadedFiles[0].name}
-                        className="max-w-full max-h-full object-contain"
+                        className="max-w-full max-h-[160px] object-contain mx-auto"
                       />
                     ) : (
                       <video
                         src={URL.createObjectURL(uploadedFiles[0])}
-                        className="max-w-full max-h-full object-contain"
+                        className="max-w-full max-h-[160px] object-contain mx-auto"
                         muted
                       />
                     )}
                   </div>
                   
-                  {/* Red X button on top-right of box */}
+                  {/* Red X button on top-right inside the box */}
                   <button
                     onClick={handleClearFiles}
-                    className="absolute -top-2 -right-2 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition-colors"
+                    className="absolute top-2 right-2 w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition-colors shadow-lg"
                   >
                     ×
                   </button>
                   
-                  {/* Replace button on bottom-right of box, aligned vertically with X */}
+                  {/* Replace button on bottom-right inside the box */}
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute -bottom-2 -right-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                    className="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors shadow-lg"
                   >
                     Replace
                   </button>

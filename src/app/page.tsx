@@ -38,6 +38,10 @@ export default function HomePage() {
     setCurrentPage('notes')
   }
 
+  const handleClearFiles = () => {
+    setUploadedFiles([])
+  }
+
   return (
     <main className="bg-[#1a1a1a] min-h-screen text-white relative overflow-hidden">
       <Sidebar 
@@ -62,6 +66,7 @@ export default function HomePage() {
           onFileUpload={handleFileUpload}
           onEditMode={handleEditMode}
           onBackToNotes={handleBackToNotes}
+          onClearFiles={handleClearFiles}
         />
       )}
       
