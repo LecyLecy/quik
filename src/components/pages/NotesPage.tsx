@@ -414,7 +414,7 @@ export default function NotesPage({ onMenuToggle, sidebarOpen }: NotesPageProps)
       {/* Main Content */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 flex flex-col gap-3 mx-auto w-full max-w-none sm:max-w-4xl lg:max-w-7xl xl:max-w-none hide-scrollbar"
+        className="flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 pt-4 flex flex-col gap-3 mx-auto w-full max-w-none sm:max-w-4xl lg:max-w-7xl xl:max-w-none hide-scrollbar"
       >
         {loading ? (
           <div className="text-center text-gray-400 py-8">Loading...</div>
