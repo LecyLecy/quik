@@ -79,6 +79,8 @@ export default function HomePage() {
             return !realWhatsAppStatus.isReady ? (
               <RealWhatsAppLinkPage 
                 onLinked={handleWhatsAppLinked}
+                onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+                sidebarOpen={sidebarOpen}
               />
             ) : (
               <InputContentPage 
