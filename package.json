@@ -10,12 +10,16 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.51.0",
+    "@types/qrcode": "^1.5.5",
     "firebase": "^11.10.0",
     "next": "15.3.5",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-linkify": "^1.0.0-alpha",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "whatsapp-web.js": "^1.31.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

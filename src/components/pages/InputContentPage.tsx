@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react'
 import Header from '@/components/Header'
+import { useWhatsAppConnection } from '@/hooks/useWhatsAppConnection'
+import { useRealWhatsApp } from '@/hooks/useRealWhatsApp'
 
 interface InputContentPageProps {
   onMenuToggle: () => void
@@ -10,6 +12,7 @@ interface InputContentPageProps {
   onFileUpload: (files: File[]) => void
   onEditMode: () => void
   onClearFiles: () => void
+  onWhatsAppUnlink: () => void
 }
 
 export default function InputContentPage({ 
@@ -18,10 +21,16 @@ export default function InputContentPage({
   uploadedFiles, 
   onFileUpload, 
   onEditMode, 
-  onClearFiles 
+  onClearFiles,
+  onWhatsAppUnlink
 }: InputContentPageProps) {
+  const { connection, unlinkWhatsApp } = useWhatsAppConnection()
+  const { status: realWhatsAppStatus, sendSticker, disconnectWhatsApp } = useRealWhatsApp()
   const [isDragging, setIsDragging] = useState(false)
   const [showUnlinkModal, setShowUnlinkModal] = useState(false)
+  const [isSendingSticker, setIsSendingSticker] = useState(false)
+  const [sendStatus, setSendStatus] = useState<{ message: string; isError: boolean } | null>(null)
+  const [isDisconnecting, setIsDisconnecting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = useCallback((files: FileList | null) => {
@@ -66,6 +75,42 @@ export default function InputContentPage({
     }
   }, [uploadedFiles, onEditMode])
 
+  const handleSendSticker = async () => {
+    if (!uploadedFiles[0] || !realWhatsAppStatus.isReady) return
+
+    setIsSendingSticker(true)
+    setSendStatus(null)
+
+    try {
+      // Convert file to base64
+      const file = uploadedFiles[0]
+      const reader = new FileReader()
+      
+      reader.onload = async (e) => {
+        const base64Data = e.target?.result as string
+        
+        const result = await sendSticker(base64Data)
+        
+        if (result.success) {
+          setSendStatus({ message: 'Sticker sent successfully! 🎉', isError: false })
+        } else {
+          setSendStatus({ message: result.error || 'Failed to send sticker', isError: true })
+        }
+        
+        setIsSendingSticker(false)
+        
+        // Clear status after 3 seconds
+        setTimeout(() => setSendStatus(null), 3000)
+      }
+      
+      reader.readAsDataURL(file)
+    } catch (_error) {
+      setSendStatus({ message: 'Failed to send sticker', isError: true })
+      setIsSendingSticker(false)
+      setTimeout(() => setSendStatus(null), 3000)
+    }
+  }
+
   const handleClearFiles = useCallback(() => {
     onClearFiles()
     if (fileInputRef.current) {
@@ -73,16 +118,28 @@ export default function InputContentPage({
     }
   }, [onClearFiles])
 
-  const handleUnlinkWhatsApp = useCallback(() => {
-    setShowUnlinkModal(true)
-  }, [])
-
-  const handleConfirmUnlink = useCallback(() => {
-    // TODO: Implement actual WhatsApp unlinking logic
-    console.log('WhatsApp unlinked successfully')
-    alert('WhatsApp has been unlinked from your account!')
-    setShowUnlinkModal(false)
-  }, [])
+  const handleConfirmUnlink = useCallback(async () => {
+    try {
+      setIsDisconnecting(true)
+      
+      // Disconnect from real WhatsApp (this will logout properly)
+      await disconnectWhatsApp()
+      
+      // Also clear the demo connection state for compatibility
+      unlinkWhatsApp()
+      
+      setShowUnlinkModal(false)
+      onWhatsAppUnlink() // Navigate back to QR code page
+    } catch (error) {
+      console.error('Failed to disconnect WhatsApp:', error)
+      // Still proceed with demo unlink
+      unlinkWhatsApp()
+      setShowUnlinkModal(false)
+      onWhatsAppUnlink()
+    } finally {
+      setIsDisconnecting(false)
+    }
+  }, [disconnectWhatsApp, unlinkWhatsApp, onWhatsAppUnlink])
 
   const handleCancelUnlink = useCallback(() => {
     setShowUnlinkModal(false)
@@ -96,6 +153,19 @@ export default function InputContentPage({
         title="Sticker"
         onMenuToggle={onMenuToggle}
         sidebarOpen={sidebarOpen}
+        rightContent={
+          (connection.isLinked || realWhatsAppStatus.isReady) && (
+            <div className="flex items-center gap-3">
+              {/* WhatsApp Connection Status */}
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-gray-300">
+                  Connected to {realWhatsAppStatus.isReady ? (realWhatsAppStatus.phoneNumber || 'WhatsApp') : (connection.phoneNumber || 'WhatsApp')}
+                </span>
+              </div>
+            </div>
+          )
+        }
       />
 
       {/* Main Content */}
@@ -169,6 +239,41 @@ export default function InputContentPage({
                     {uploadedFiles[0].name}
                   </div>
                 </div>
+                
+                {/* Send Status */}
+                {sendStatus && (
+                  <div className={`mb-4 p-3 rounded-lg text-sm ${
+                    sendStatus.isError 
+                      ? 'bg-red-900/50 border border-red-500 text-red-200' 
+                      : 'bg-green-900/50 border border-green-500 text-green-200'
+                  }`}>
+                    {sendStatus.message}
+                  </div>
+                )}
+                
+                {/* Send Sticker Button */}
+                {realWhatsAppStatus.isReady ? (
+                  <button
+                    onClick={handleSendSticker}
+                    disabled={isSendingSticker}
+                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white py-3 px-6 rounded-lg font-medium transition-colors mb-4 flex items-center justify-center gap-2"
+                  >
+                    {isSendingSticker ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        📱 Send to WhatsApp
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div className="w-full bg-gray-700 text-gray-400 py-3 px-6 rounded-lg font-medium mb-4 text-center text-sm">
+                    WhatsApp not connected
+                  </div>
+                )}
                 
                 {/* Edit button */}
                 <button
@@ -266,20 +371,29 @@ export default function InputContentPage({
               Unlink WhatsApp?
             </h3>
             <p className="text-gray-300 mb-6">
-              Are you sure you want to unlink your WhatsApp account? This will remove your access to WhatsApp sticker creation features.
+              Are you sure you want to unlink your WhatsApp account? This will properly logout from WhatsApp Web and remove your device from the linked devices list.
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={handleCancelUnlink}
-                className="flex-1 px-4 py-2 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+                disabled={isDisconnecting}
+                className="flex-1 px-4 py-2 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmUnlink}
-                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                disabled={isDisconnecting}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Unlink
+                {isDisconnecting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Logging out...
+                  </>
+                ) : (
+                  'Unlink'
+                )}
               </button>
             </div>
           </div>
