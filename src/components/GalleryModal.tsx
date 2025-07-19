@@ -12,6 +12,11 @@ interface GalleryModalProps {
   onItemClick: (item: MediaItem) => void
   onRequestDownload?: (item: MediaItem) => void
   onRequestDelete?: (item: MediaItem) => void
+  downloadProgress?: {
+    isDownloading: boolean
+    progress: number
+    fileName: string
+  }
 }
 
 export default function GalleryModal({
@@ -22,6 +27,7 @@ export default function GalleryModal({
   onItemClick,
   onRequestDownload,
   onRequestDelete,
+  downloadProgress
 }: GalleryModalProps) {
   return (
     <BaseModal isOpen={open} onClose={onClose} showBackButton={false}>
@@ -135,6 +141,8 @@ export default function GalleryModal({
                       fileName={item.fileName} 
                       fileSize={item.fileSize}
                       compact={false}
+                      isDownloading={downloadProgress?.isDownloading && downloadProgress?.fileName === item.fileName}
+                      downloadProgress={downloadProgress?.progress || 0}
                     />
                   )}
                 </div>

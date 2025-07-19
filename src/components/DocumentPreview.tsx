@@ -7,13 +7,19 @@ interface DocumentPreviewProps {
   fileSize?: number
   className?: string
   compact?: boolean
+  onClick?: () => void
+  isDownloading?: boolean
+  downloadProgress?: number
 }
 
 const DocumentPreview = memo(function DocumentPreview({ 
   fileName = 'Document', 
   fileSize, 
   className = '', 
-  compact = false 
+  compact = false,
+  onClick,
+  isDownloading = false,
+  downloadProgress = 0
 }: DocumentPreviewProps) {
   const getFileExtension = () => {
     const ext = fileName.split('.').pop()?.toLowerCase() || 'file'
@@ -41,7 +47,39 @@ const DocumentPreview = memo(function DocumentPreview({
   const displayFileName = truncateFileName(fileName, maxFileNameLength)
 
   return (
-    <div className={`flex flex-col justify-center items-center h-full w-full min-h-[120px] aspect-square text-white ${className}`}>
+    <div 
+      className={`relative flex flex-col justify-center items-center h-full w-full min-h-[120px] aspect-square text-white ${onClick ? 'cursor-pointer hover:bg-gray-800/50 transition-colors' : ''} ${className}`}
+      onClick={onClick}
+    >
+      {/* Download Progress Overlay */}
+      {isDownloading && (
+        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10 rounded">
+          <div className="relative w-16 h-16 mb-2">
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <path
+                className="text-gray-600"
+                stroke="currentColor"
+                strokeWidth="3"
+                fill="none"
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+              />
+              <path
+                className="text-blue-500"
+                stroke="currentColor"
+                strokeWidth="3"
+                fill="none"
+                strokeDasharray={`${downloadProgress}, 100`}
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-semibold text-white">{downloadProgress}%</span>
+            </div>
+          </div>
+          <span className="text-xs text-gray-300">Downloading...</span>
+        </div>
+      )}
+
       {/* Document Icon */}
       <div className={`${compact ? 'text-4xl mb-1' : 'text-3xl mb-1'} opacity-80`}>
         📄

@@ -7,6 +7,8 @@ import GalleryModal from '@/components/GalleryModal'
 import DownloadAndDeleteConfirmationModal from '@/components/DownloadAndDeleteConfirmationModal'
 import DocumentPreview from '@/components/DocumentPreview'
 import { useWindowWidth } from '@/hooks/useWindowWidth'
+import { useDeviceType, isMobileOrTablet } from '@/hooks/useDeviceType'
+import { useDocumentHandler } from '@/hooks/useDocumentHandler'
 import Linkify from 'react-linkify'
 import { supabase } from '@/lib/supabase/client'
 import { updateNoteBubble } from '@/hooks/useSaveNote'
@@ -92,6 +94,10 @@ const NoteBubble = memo(function NoteBubble({
   
   // Use window width hook
   const { isMobile, isTablet } = useWindowWidth()
+  
+  // Use device type and document handler hooks
+  const deviceType = useDeviceType()
+  const { downloadProgress, openDocumentInBrowser, openDocumentViewer } = useDocumentHandler()
 
   // Memoize expensive calculations
   const gridCols = useMemo(() => isMobile ? 2 : isTablet ? 3 : 4, [isMobile, isTablet])
@@ -158,8 +164,17 @@ const NoteBubble = memo(function NoteBubble({
     if (item.type === 'image' || item.type === 'gif' || item.type === 'video') {
       setPreviewUrl(item.url)
       setPreviewType(item.type)
+    } else if (item.type === 'document') {
+      // Handle document click based on device type
+      if (isMobileOrTablet(deviceType)) {
+        // Mobile/Tablet: Download with progress, then open viewer
+        openDocumentViewer(item.url, item.fileName || 'document')
+      } else {
+        // Desktop: Open directly in browser
+        openDocumentInBrowser(item.url)
+      }
     }
-  }, [])
+  }, [deviceType, openDocumentViewer, openDocumentInBrowser])
 
   // Handler hapus konten (bubble dan storage) - optimized with optimistic updates
   const handleDeleteContent = useCallback(async (item: MediaItem) => {
@@ -412,6 +427,8 @@ const NoteBubble = memo(function NoteBubble({
                       fileName={item.fileName} 
                       fileSize={item.fileSize}
                       compact={true}
+                      isDownloading={downloadProgress.isDownloading && downloadProgress.fileName === item.fileName}
+                      downloadProgress={downloadProgress.progress}
                     />
                   )}
                 </div>
@@ -581,6 +598,7 @@ const NoteBubble = memo(function NoteBubble({
             setDeleteTarget(item)
             setDeleteModalOpen(true)
           }}
+          downloadProgress={downloadProgress}
         />
       )}
 
