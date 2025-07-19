@@ -19,15 +19,12 @@ The app supports rich media previews, countdown notes, fullscreen modal previews
 - "Scroll to bottom" button, sticky header
 - Disabled buttons & input validation (file naming, select mode)
 - Prevents any actions on a bubble in select mode
-- **WhatsApp Sticker Integration**: Sidebar navigation with dedicated sticker page for creating and sending custom stickers to WhatsApp
-- **Advanced Media Editing**: Crop, resize, and video trimming capabilities for sticker creation
+- **Memory Leak Prevention**: Automatic cleanup of uploaded files that aren't saved (prevents storage bloat from page refreshes)
 
 **Integrations:**
 
 - Supabase (Database & Storage: `notes-media` bucket)
 - `react-linkify` for auto-linking URLs in note descriptions
-- **WhatsApp Web API**: Backend server integration for QR code authentication and sticker sending
-- **Media Processing**: Sharp/FFmpeg for WebP conversion and optimization
 
 ---
 
@@ -35,21 +32,68 @@ The app supports rich media previews, countdown notes, fullscreen modal previews
 
 **Tech Stack:**
 
-- Next.js (App Router, Typescript)
+- Next.js 15.3.5 (App Router, TypeScript)
 - React (functional components, hooks)
 - Supabase (Postgres DB, Storage)
 - Tailwind CSS for UI
 - `react-linkify` for URL parsing
-- **Express.js Backend**: WhatsApp Web integration server
-- **whatsapp-web.js**: WhatsApp Web API library
-- **Sharp/FFmpeg**: Media processing and WebP conversion
-- (Optionally) Electron for desktop app shell (planned)
-- 
+
+**Project Structure:**
+```
+src/
+  app/
+    globals.css          # Global styles with Tailwind CSS integration
+    layout.tsx           # Root layout component
+    page.tsx             # Main page component
+  components/
+    NoteInput.tsx        # Main note input component with memory leak prevention
+    NoteBubble.tsx       # Individual note display component
+    DocumentPreview.tsx  # Document file preview
+    MediaModal.tsx       # Fullscreen media viewer
+    GalleryModal.tsx     # Image gallery for multiple images
+    BaseModal.tsx        # Base modal component
+    SwipeDeleteConfirmModal.tsx  # Confirmation for swipe delete
+    DownloadAndDeleteConfirmationModal.tsx  # Download/delete confirmation
+  hooks/
+    useNotes.ts          # Notes data management
+    useSaveNote.ts       # Note saving functionality
+    useSwipeGesture.ts   # Swipe gesture handling
+    useWindowWidth.ts    # Responsive width detection
+  lib/
+    supabase/
+      client.ts          # Supabase client configuration
+  types/
+    note.ts              # TypeScript interfaces for notes and media
+```
+
+**Recent Implementations:**
+
+1. **Memory Leak Fix (NoteInput.tsx):**
+   - Added `tempUploads` state to track temporary file uploads
+   - Cleanup effect that removes orphaned uploads on page load/unload
+   - Automatic removal from tracking when files are manually deleted
+   - Automatic cleanup when notes are successfully saved
+   - localStorage fallback for persistence across page refreshes
+
+**Current Issues Resolved:**
+- ✅ Memory leak where uploaded files remained in Supabase storage after page refresh without saving
+- ✅ Proper file cleanup on manual removal, successful save, and page navigation
 
 **Context for GitHub Copilot:**
 This is a mobile-first notes/chat app with rich media support, built with Next.js + Supabase.
 UI must be robust for both desktop and mobile, all actions safe, async, and reflect instantly in UI.
-All logic should be written clean, in Typescript, with reactivity for notes state.
-Copilot should help with robust hooks, UI/UX flows, and edge-case handling!
+All logic should be written clean, in TypeScript, with reactivity for notes state.
+The NoteInput component now includes comprehensive memory leak prevention for uploaded files.
 
-for output, i want to to ask me for more detail if you are unsure, make sure i agree on what you are about to do, make sure what im thinking is the same as you, just ask me for anything like screenshot, file, etc or ask me like "do you want it to be like this or this"
+**Important Notes:**
+- CSS uses `@import "tailwindcss";` in globals.css (Next.js specific syntax)
+- All file uploads go to Supabase `notes-media` bucket
+- Temporary uploads are tracked and cleaned up automatically
+- Always maintain existing styling and only implement requested features
+
+**Development Guidelines:**
+- Ask for clarification when unsure about implementation details
+- Confirm understanding before making changes
+- Request screenshots or examples when needed
+- Always preserve existing functionality unless explicitly asked to change
+- Be extremely careful with CSS changes as they can break the dark theme styling
