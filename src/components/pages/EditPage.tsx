@@ -507,7 +507,7 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
         sidebarOpen={false}
       />
 
-      <div className="flex-1 overflow-y-auto p-6 bg-black">
+      <div className="flex-1 overflow-y-auto p-6 bg-black flex items-center justify-center">
         <div className="max-w-md mx-auto">
           <div className="bg-[#1e1e1e] rounded-lg p-6">
             {/* Edit Preview Container - 512x512 with crop */}
