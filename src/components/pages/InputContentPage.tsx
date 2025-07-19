@@ -116,11 +116,25 @@ export default function InputContentPage({
                         className="max-w-full max-h-[160px] object-contain mx-auto"
                       />
                     ) : (
-                      <video
-                        src={URL.createObjectURL(uploadedFiles[0])}
-                        className="max-w-full max-h-[160px] object-contain mx-auto"
-                        muted
-                      />
+                      <div className="relative">
+                        <video
+                          src={URL.createObjectURL(uploadedFiles[0])}
+                          className="max-w-full max-h-[160px] object-contain mx-auto"
+                          muted
+                        />
+                        {/* Play icon overlay for video */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="bg-black/50 rounded-full p-3">
+                            <svg 
+                              className="w-8 h-8 text-white" 
+                              fill="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
                   
