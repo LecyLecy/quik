@@ -92,7 +92,6 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
   const handleVideoLoadedData = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.target as HTMLVideoElement
     const duration = video.duration
-    console.log('Video loaded, duration:', duration)
     setVideoTotalDuration(duration)
     
     // Only set default values on first load, don't override user adjustments
@@ -273,83 +272,34 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
   // ============================================================================
   
   /**
-   * ▶️ Auto-play Video Effect
-   * Automatically set video to start point and play when component mounts or parameters change
+   * 🎬 Comprehensive Auto-play Effect
+   * Handles all video auto-play scenarios with proper error handling
    */
   useEffect(() => {
-    if (uploadedFiles.length > 0 && uploadedFiles[0].type.startsWith('video/')) {
-      const videoElements = document.querySelectorAll('video')
-      videoElements.forEach(video => {
-        if (video.src && video.src.includes('blob:')) {
-          video.currentTime = videoStartPoint // Set to start point
-          video.play().catch(console.error)
-        }
-      })
-    }
-  }, [uploadedFiles, videoStartPoint, videoDuration]) // Re-run when start point OR duration changes
-  
-  /**
-   * 🎬 Auto-play on Edit Mode Entry
-   * Start video playing when entering edit mode (including returning from send)
-   */
-  useEffect(() => {
-    // Small delay to ensure video elements are rendered
-    const timer = setTimeout(() => {
+    const playVideo = async () => {
       if (uploadedFiles.length > 0 && uploadedFiles[0].type.startsWith('video/')) {
+        // Small delay to ensure video elements are rendered
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
         const videoElements = document.querySelectorAll('video')
-        videoElements.forEach(video => {
+        videoElements.forEach(async (video) => {
           if (video.src && video.src.includes('blob:')) {
-            video.currentTime = videoStartPoint
-            video.play().catch(console.error)
+            try {
+              video.currentTime = videoStartPoint
+              await video.play()
+            } catch (error) {
+              // Silently handle play interruption errors
+              if (error instanceof Error && error.name !== 'AbortError') {
+                console.warn('Video play error:', error)
+              }
+            }
           }
         })
       }
-    }, 100)
+    }
     
-    return () => clearTimeout(timer)
-  }, []) // Run once when component mounts (entering edit mode)
-  
-  /**
-   * 🎬 Auto-play when returning from Preview
-   * Start video playing when going back from preview mode to edit mode
-   */
-  useEffect(() => {
-    // Only trigger when showPreview becomes false (returning from preview)
-    if (!showPreview && uploadedFiles.length > 0 && uploadedFiles[0].type.startsWith('video/')) {
-      const timer = setTimeout(() => {
-        const videoElements = document.querySelectorAll('video')
-        videoElements.forEach(video => {
-          if (video.src && video.src.includes('blob:')) {
-            video.currentTime = videoStartPoint
-            video.play().catch(console.error)
-          }
-        })
-      }, 100)
-      
-      return () => clearTimeout(timer)
-    }
-  }, [showPreview, uploadedFiles, videoStartPoint]) // Trigger when showPreview changes
-  
-  /**
-   * 🎬 Auto-play Preview at Start Point
-   * Start preview video at selected start point when entering preview mode
-   */
-  useEffect(() => {
-    // When entering preview mode, set video to start point
-    if (showPreview && uploadedFiles.length > 0 && uploadedFiles[0].type.startsWith('video/')) {
-      const timer = setTimeout(() => {
-        const videoElements = document.querySelectorAll('video')
-        videoElements.forEach(video => {
-          if (video.src && video.src.includes('blob:')) {
-            video.currentTime = videoStartPoint
-            video.play().catch(console.error)
-          }
-        })
-      }, 100)
-      
-      return () => clearTimeout(timer)
-    }
-  }, [showPreview, videoStartPoint, uploadedFiles]) // Trigger when entering preview mode
+    playVideo()
+  }, [uploadedFiles, videoStartPoint, videoDuration, showPreview, scale]) // Trigger on any relevant change including scale
   
   // ============================================================================
 
