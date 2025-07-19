@@ -18,16 +18,20 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
   const [isDraggingContent, setIsDraggingContent] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   
-  // Video duration controls
-  const [videoDuration, setVideoDuration] = useState(3.0)
-  const [videoTotalDuration, setVideoTotalDuration] = useState(0)
-  const [videoStartTime, setVideoStartTime] = useState(0)
-  const [videoEndTime, setVideoEndTime] = useState(3.0)
+  // ============================================================================
+  // 🎬 VIDEO DURATION TRIMMER - STATE VARIABLES
+  // ============================================================================
+  // Core duration variables untuk video trimming functionality
+  const [videoDuration, setVideoDuration] = useState(3.0)        // Selected duration (0.1s - 4.9s, default: 3.0s)
+  const [videoTotalDuration, setVideoTotalDuration] = useState(0) // Total video duration from metadata
+  const [videoStartTime, setVideoStartTime] = useState(0)        // Start time of selection (left handle position)
+  const [videoEndTime, setVideoEndTime] = useState(3.0)          // End time of selection (right handle position)
   
-  // Video Timeline Drag States
-  const [isDraggingTimeline, setIsDraggingTimeline] = useState(false)
-  const [dragType, setDragType] = useState<'start' | 'end' | 'bar' | null>(null)
-  const [shouldUpdateVideo, setShouldUpdateVideo] = useState(true)
+  // Timeline drag state management
+  const [isDraggingTimeline, setIsDraggingTimeline] = useState(false) // True saat user sedang drag timeline
+  const [dragType, setDragType] = useState<'start' | 'end' | 'bar' | null>(null) // Type drag: start handle, end handle, atau yellow bar
+  const [shouldUpdateVideo, setShouldUpdateVideo] = useState(true) // Flag untuk mengontrol video time update
+  // ============================================================================
   
   // Preview state
   const [showPreview, setShowPreview] = useState(false)
@@ -84,51 +88,110 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     setRotation(newRotation)
   }, [rotation])
 
-  // Video event handlers
+  // ============================================================================
+  // 🎬 VIDEO DURATION TRIMMER - EVENT HANDLERS
+  // ============================================================================
+  
+  /**
+   * 📹 Video Loaded Data Handler
+   * Dipanggil saat video metadata selesai dimuat
+   * - Set total duration dari video metadata
+   * - Initialize default selection (0s - 3s atau full duration jika < 3s)
+   */
   const handleVideoLoadedData = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.target as HTMLVideoElement
     const duration = video.duration
-    setVideoTotalDuration(duration)
+    setVideoTotalDuration(duration) // Set total duration dari metadata
     
+    // Default selection: 3 detik atau full duration jika video < 3 detik
     const defaultEnd = Math.min(3.0, duration)
     setVideoEndTime(defaultEnd)
     setVideoDuration(defaultEnd)
   }, [])
 
+  /**
+   * ⏰ Video Time Update Handler
+   * Dipanggil setiap frame saat video playing
+   * - Pastikan video hanya play dalam range yang dipilih (start - end)
+   * - Loop video dalam selection range
+   * - Skip update saat sedang drag timeline untuk menghindari conflict
+   */
   const handleVideoTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.target as HTMLVideoElement
     
+    // Skip update saat drag untuk menghindari conflict dengan drag logic
     if (isDraggingTimeline || !shouldUpdateVideo) return
     
+    // Jika video mencapai end time, reset ke start time (looping)
     if (video.currentTime >= videoEndTime) {
       video.currentTime = videoStartTime
     }
     
+    // Jika video di bawah start time, set ke start time
     if (video.currentTime < videoStartTime) {
       video.currentTime = videoStartTime
     }
   }, [videoStartTime, videoEndTime, isDraggingTimeline, shouldUpdateVideo])
 
+  /**
+   * ▶️ Video Play Handler
+   * Dipanggil saat user click play atau video auto-play
+   * - Pastikan video start dari posisi yang benar dalam selection
+   */
   const handleVideoPlay = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.target as HTMLVideoElement
     
+    // Jika current time di luar selection range, reset ke start
     if (video.currentTime < videoStartTime || video.currentTime >= videoEndTime) {
       video.currentTime = videoStartTime
     }
   }, [videoStartTime, videoEndTime])
+  
+  // ============================================================================
 
-  // Timeline drag handlers
+  // ============================================================================
+
+  // ============================================================================
+  // 🎬 VIDEO DURATION TRIMMER - MAIN DRAG LOGIC
+  // ============================================================================
+  /**
+   * 🖱️ Timeline Drag Handler
+   * Handle semua drag operations untuk duration trimmer:
+   * 
+   * 1. START HANDLE (Left): 
+   *    - Mengatur videoStartTime
+   *    - videoEndTime tetap fix
+   *    - videoDuration = videoEndTime - videoStartTime
+   * 
+   * 2. END HANDLE (Right):
+   *    - Mengatur videoEndTime  
+   *    - videoStartTime tetap fix
+   *    - videoDuration = videoEndTime - videoStartTime
+   * 
+   * 3. YELLOW BAR (Middle):
+   *    - Move both start dan end together
+   *    - videoDuration tetap sama
+   *    - Slide entire selection
+   * 
+   * CONSTRAINTS:
+   * - Min duration: 0.1s
+   * - Max duration: 4.9s
+   * - Start time: >= 0
+   * - End time: <= videoTotalDuration
+   */
   const handleDragStart = useCallback((e: React.MouseEvent, type: 'start' | 'end' | 'bar') => {
     e.preventDefault()
     e.stopPropagation()
     
+    // Set drag state
     setIsDraggingTimeline(true)
     setDragType(type)
-    setShouldUpdateVideo(false)
+    setShouldUpdateVideo(false) // Disable video time update selama drag
     
     const startX = e.clientX
     let startValue = 0
     
+    // Tentukan initial value berdasarkan drag type
     if (type === 'start') {
       startValue = videoStartTime
     } else if (type === 'end') {
@@ -138,31 +201,41 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     }
     
     const handleMouseMove = (e: MouseEvent) => {
+      // Calculate delta movement
       const deltaX = e.clientX - startX
       const timelineElement = document.querySelector('.timeline-track')
       const timelineWidth = timelineElement ? timelineElement.clientWidth : 300
       const deltaTime = (deltaX / timelineWidth) * videoTotalDuration
       
       if (type === 'start') {
+        // 👈 START HANDLE LOGIC
+        // Adjust start time, keep end time fixed
         const newStartTime = Math.max(0, Math.min(videoEndTime - 0.1, startValue + deltaTime))
         const newDuration = videoEndTime - newStartTime
         
+        // Apply constraints: duration 0.1s - 4.9s
         if (newDuration >= 0.1 && newDuration <= 4.9) {
           setVideoStartTime(newStartTime)
           setVideoDuration(newDuration)
         }
       } else if (type === 'end') {
+        // 👉 END HANDLE LOGIC  
+        // Adjust end time, keep start time fixed
         const newEndTime = Math.max(videoStartTime + 0.1, Math.min(videoTotalDuration, startValue + deltaTime))
         const newDuration = newEndTime - videoStartTime
         
+        // Apply constraints: duration 0.1s - 4.9s
         if (newDuration >= 0.1 && newDuration <= 4.9) {
           setVideoEndTime(newEndTime)
           setVideoDuration(newDuration)
         }
       } else if (type === 'bar') {
+        // 🟡 YELLOW BAR LOGIC
+        // Move both start and end together, keep duration same
         const newStartTime = Math.max(0, Math.min(videoTotalDuration - videoDuration, startValue + deltaTime))
         const newEndTime = newStartTime + videoDuration
         
+        // Apply boundary constraints
         if (newEndTime <= videoTotalDuration) {
           setVideoStartTime(newStartTime)
           setVideoEndTime(newEndTime)
@@ -171,12 +244,16 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     }
     
     const handleMouseUp = () => {
+      // Reset drag state
       setIsDraggingTimeline(false)
       setDragType(null)
-      setShouldUpdateVideo(true)
+      setShouldUpdateVideo(true) // Re-enable video time update
+      
+      // Remove event listeners
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
       
+      // Update video position ke start time setelah drag selesai
       const videoElements = document.querySelectorAll('video')
       videoElements.forEach(video => {
         if (video.src && video.src.includes('blob:')) {
@@ -185,27 +262,52 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
       })
     }
     
+    // Add global event listeners untuk smooth dragging
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
   }, [videoStartTime, videoEndTime, videoTotalDuration, videoDuration])
+  
+  // ============================================================================
 
-  // Save and cancel handlers
+  // ============================================================================
+
+  // ============================================================================
+  // 🎬 VIDEO DURATION TRIMMER - SAVE & CANCEL HANDLERS
+  // ============================================================================
+  
+  /**
+   * 💾 Save Changes Handler
+   * Menyimpan semua edit parameters termasuk video duration settings
+   * Data yang disimpan: rotation, scale, position, videoDuration, videoStartTime, videoEndTime
+   */
   const handleSaveChanges = useCallback(() => {
     console.log('Saving changes:', { rotation, scale, position, videoDuration, videoStartTime, videoEndTime })
     setShowPreview(true)
   }, [rotation, scale, position, videoDuration, videoStartTime, videoEndTime])
 
+  /**
+   * ❌ Cancel Edit Handler  
+   * Reset semua parameters ke nilai default termasuk duration trimmer
+   */
   const handleCancelEdit = useCallback(() => {
     setRotation(0)
     setScale(100)
     setPosition({ x: 0, y: 0 })
+    // Reset duration trimmer ke default values
     setVideoDuration(3.0)
     setVideoStartTime(0)
     setVideoEndTime(3.0)
     setShowPreview(false)
     onExitEdit()
   }, [onExitEdit])
+  
+  // ============================================================================
 
+  /**
+   * 📤 Confirm Send Handler
+   * Upload file ke Supabase dan create note dengan edit data termasuk duration trimmer settings
+   * EditData yang disimpan: rotation, scale, position, videoDuration, videoStartTime, videoEndTime
+   */
   const handleConfirmSend = useCallback(async () => {
     try {
       // Convert the File to a proper MediaItem by uploading to Supabase
@@ -229,7 +331,7 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
         .from('notes-media')
         .getPublicUrl(fileName)
       
-      // Create MediaItem
+      // Create MediaItem dengan edit data termasuk duration trimmer settings
       const mediaItem = {
         id: Math.random().toString(36).substring(2),
         type: file.type.startsWith('image/') ? 'image' as const : 'video' as const,
@@ -239,13 +341,14 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
         fileSize: file.size,
         fileType: file.type,
         createdAt: new Date().toISOString(),
+        // 🎬 DURATION TRIMMER DATA - Simpan semua settings untuk future reference
         editData: {
           rotation,
           scale,
           position,
-          videoDuration,
-          videoStartTime,
-          videoEndTime
+          videoDuration,      // Selected duration (0.1s - 4.9s)
+          videoStartTime,     // Start time selection  
+          videoEndTime        // End time selection
         }
       }
       
@@ -275,18 +378,28 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
     setShowPreview(false)
   }, [])
 
-  // Auto-play video with looping
+  // ============================================================================
+  // 🎬 VIDEO DURATION TRIMMER - AUTO-PLAY EFFECT
+  // ============================================================================
+  
+  /**
+   * ▶️ Auto-play Video Effect
+   * Automatically set video ke start time dan play saat component mount atau videoStartTime berubah
+   * Memastikan video selalu play dari posisi yang benar sesuai duration trimmer selection
+   */
   useEffect(() => {
     if (uploadedFiles.length > 0 && uploadedFiles[0].type.startsWith('video/')) {
       const videoElements = document.querySelectorAll('video')
       videoElements.forEach(video => {
         if (video.src && video.src.includes('blob:')) {
-          video.currentTime = videoStartTime
+          video.currentTime = videoStartTime // Set ke start time dari selection
           video.play().catch(console.error)
         }
       })
     }
-  }, [uploadedFiles, videoStartTime])
+  }, [uploadedFiles, videoStartTime]) // Re-run saat videoStartTime berubah
+  
+  // ============================================================================
 
   // Render content helper
   const renderContent = useCallback((interactive: boolean = true) => {
@@ -324,11 +437,12 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
             className="block"
             style={{ width: '256px', height: '256px', objectFit: 'contain' }}
             muted
-            onLoadedData={interactive ? handleVideoLoadedData : undefined}
-            onTimeUpdate={interactive ? handleVideoTimeUpdate : undefined}
-            onPlay={interactive ? handleVideoPlay : undefined}
-            autoPlay={!interactive}
-            loop={!interactive}
+            // 🎬 DURATION TRIMMER - Video Event Handlers (hanya untuk interactive mode)
+            onLoadedData={interactive ? handleVideoLoadedData : undefined}     // Set total duration dan default selection
+            onTimeUpdate={interactive ? handleVideoTimeUpdate : undefined}     // Loop video dalam selection range
+            onPlay={interactive ? handleVideoPlay : undefined}                 // Ensure correct start position
+            autoPlay={!interactive}  // Auto-play untuk preview mode
+            loop={!interactive}      // Loop untuk preview mode
           />
         </div>
       )
@@ -551,22 +665,25 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
                 </div>
               </div>
 
+              {/* ================================================================ */}
+              {/* 🎬 VIDEO DURATION TRIMMER - UI COMPONENTS */}
+              {/* ================================================================ */}
               {/* Video Duration Controls - Only show for video files */}
               {uploadedFiles.length > 0 && uploadedFiles[0].type.startsWith('video/') && (
                 <div className="space-y-3">
                   <div className="border-t border-gray-600 pt-3">
                     <h3 className="text-gray-300 text-sm font-medium mb-3">Video Duration</h3>
                     
-                    {/* Duration: X.Xs */}
+                    {/* 📊 Current Duration Display */}
                     <div className="mb-3">
                       <span className="text-gray-300 text-sm">Duration: {videoDuration.toFixed(1)}s</span>
                     </div>
 
-                    {/* Timeline with draggable yellow bar */}
+                    {/* 🎚️ Interactive Timeline with draggable elements */}
                     <div className="relative select-none">
-                      {/* Timeline track */}
+                      {/* 🔘 Timeline track (Gray background - represents full video duration) */}
                       <div className="timeline-track w-full h-2 bg-gray-600 rounded-full relative">
-                        {/* Yellow selection bar */}
+                        {/* 🟡 Yellow selection bar (Represents selected duration range) */}
                         <div 
                           className={`absolute h-2 bg-yellow-400 rounded-full shadow-md transition-opacity ${
                             isDraggingTimeline ? 'opacity-80' : 'opacity-100'
@@ -574,38 +691,38 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
                             dragType === 'bar' ? 'cursor-grabbing' : 'cursor-grab'
                           }`}
                           style={{
-                            left: `${(videoStartTime / videoTotalDuration) * 100}%`,
-                            width: `${(videoDuration / videoTotalDuration) * 100}%`
+                            left: `${(videoStartTime / videoTotalDuration) * 100}%`,        // Position: start time percentage
+                            width: `${(videoDuration / videoTotalDuration) * 100}%`         // Width: duration percentage  
                           }}
-                          onMouseDown={(e) => handleDragStart(e, 'bar')}
+                          onMouseDown={(e) => handleDragStart(e, 'bar')} // Drag entire selection
                         >
-                          {/* Left handle */}
+                          {/* 👈 Left handle (Start time adjuster) */}
                           <div 
                             className="absolute w-4 h-4 bg-yellow-400 rounded-full -left-2 -top-1 cursor-ew-resize border-2 border-white hover:scale-110 transition-transform shadow-lg z-10"
                             onMouseDown={(e) => {
-                              e.stopPropagation()
-                              handleDragStart(e, 'start')
+                              e.stopPropagation() // Prevent bar drag when clicking handle
+                              handleDragStart(e, 'start') // Adjust start time only
                             }}
                           />
-                          {/* Right handle */}
+                          {/* 👉 Right handle (End time adjuster) */}
                           <div 
                             className="absolute w-4 h-4 bg-yellow-400 rounded-full -right-2 -top-1 cursor-ew-resize border-2 border-white hover:scale-110 transition-transform shadow-lg z-10"
                             onMouseDown={(e) => {
-                              e.stopPropagation()
-                              handleDragStart(e, 'end')
+                              e.stopPropagation() // Prevent bar drag when clicking handle
+                              handleDragStart(e, 'end') // Adjust end time only
                             }}
                           />
                         </div>
                       </div>
                       
-                      {/* Timeline labels */}
+                      {/* 🏷️ Timeline labels (0s to total duration) */}
                       <div className="flex justify-between text-xs text-gray-500 mt-1">
                         <span>0s</span>
                         <span>{videoTotalDuration.toFixed(1)}s</span>
                       </div>
                     </div>
 
-                    {/* Start and End time display */}
+                    {/* 📋 Start and End time display (Real-time values) */}
                     <div className="flex justify-between text-xs text-gray-400 mt-2">
                       <span>Start: {videoStartTime.toFixed(1)}s</span>
                       <span>End: {videoEndTime.toFixed(1)}s</span>
@@ -613,6 +730,7 @@ export default function EditPage({ uploadedFiles, onExitEdit }: EditPageProps) {
                   </div>
                 </div>
               )}
+              {/* ================================================================ */}
             </div>
 
             {/* Action Buttons */}

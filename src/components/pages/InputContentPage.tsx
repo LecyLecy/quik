@@ -21,6 +21,7 @@ export default function InputContentPage({
   onClearFiles 
 }: InputContentPageProps) {
   const [isDragging, setIsDragging] = useState(false)
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = useCallback((files: FileList | null) => {
@@ -73,9 +74,18 @@ export default function InputContentPage({
   }, [onClearFiles])
 
   const handleUnlinkWhatsApp = useCallback(() => {
-    // TODO: Implement WhatsApp unlinking logic
-    console.log('Unlinking WhatsApp')
-    alert('WhatsApp unlinked!')
+    setShowUnlinkModal(true)
+  }, [])
+
+  const handleConfirmUnlink = useCallback(() => {
+    // TODO: Implement actual WhatsApp unlinking logic
+    console.log('WhatsApp unlinked successfully')
+    alert('WhatsApp has been unlinked from your account!')
+    setShowUnlinkModal(false)
+  }, [])
+
+  const handleCancelUnlink = useCallback(() => {
+    setShowUnlinkModal(false)
   }, [])
 
   return (
@@ -170,7 +180,7 @@ export default function InputContentPage({
                 
                 {/* Unlink WhatsApp button */}
                 <button
-                  onClick={handleUnlinkWhatsApp}
+                  onClick={() => setShowUnlinkModal(true)}
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg font-medium transition-colors"
                 >
                   Unlink WhatsApp
@@ -237,7 +247,7 @@ export default function InputContentPage({
                 
                 {/* Unlink WhatsApp button */}
                 <button
-                  onClick={handleUnlinkWhatsApp}
+                  onClick={() => setShowUnlinkModal(true)}
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg font-medium transition-colors"
                 >
                   Unlink WhatsApp
@@ -247,6 +257,34 @@ export default function InputContentPage({
           </div>
         </div>
       </div>
+
+      {/* WhatsApp Unlink Confirmation Modal */}
+      {showUnlinkModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[#1e1e1e] rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-700">
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Unlink WhatsApp?
+            </h3>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to unlink your WhatsApp account? This will remove your access to WhatsApp sticker creation features.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCancelUnlink}
+                className="flex-1 px-4 py-2 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmUnlink}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Unlink
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
