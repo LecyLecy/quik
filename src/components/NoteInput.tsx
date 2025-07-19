@@ -31,6 +31,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
   const [loading, setLoading] = useState(false)
   const [existingUploads, setExistingUploads] = useState<MediaItem[]>([])
   const [newUploads, setNewUploads] = useState<MediaItem[]>([])
+  const [tempUploads, setTempUploads] = useState<string[]>([])
   const [isCountdownMode, setIsCountdownMode] = useState(false)
   const [countdownDate, setCountdownDate] = useState('')
   const [countdownTime, setCountdownTime] = useState('')
@@ -67,6 +68,34 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
     }
   }, [editingNote])
 
+  // Cleanup temporary uploads on page unload
+  useEffect(() => {
+    const cleanupTempUploads = async () => {
+      const tempFilePaths = JSON.parse(localStorage.getItem('tempUploads') || '[]')
+      if (tempFilePaths.length > 0) {
+        await Promise.all(
+          tempFilePaths.map((path: string) =>
+            supabase.storage.from('notes-media').remove([path])
+          )
+        )
+        localStorage.removeItem('tempUploads')
+      }
+    }
+
+    const handleBeforeUnload = () => {
+      if (tempUploads.length > 0) {
+        localStorage.setItem('tempUploads', JSON.stringify(tempUploads))
+      }
+    }
+
+    cleanupTempUploads()
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [tempUploads])
+
   const uploadFile = useCallback(async (file: File) => {
     const fileId = uuid()
     const fileExt = file.name.split('.').pop()
@@ -80,6 +109,9 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
       console.error('❌ Upload failed:', error)
       return null
     }
+
+    // Track temporary upload
+    setTempUploads(prev => [...prev, filePath])
 
     const publicUrl = supabase.storage.from('notes-media').getPublicUrl(filePath).data.publicUrl
 
@@ -182,6 +214,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
       }
 
       setNewUploads((prev) => prev.filter((item) => item.id !== id))
+      setTempUploads(prev => prev.filter(path => path !== fileToRemoveNew.storagePath))
       return
     }
 
@@ -240,6 +273,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
           isEditingDefault ? updatedContents : undefined, // update contents hanya untuk default
           updateCountdownDate // update countdown date jika edit countdown
         )
+        setTempUploads([])
       } catch (err) {
         console.error('❌ Error updating note:', err)
       } finally {
@@ -275,6 +309,7 @@ const NoteInput = forwardRef<HTMLDivElement, NoteInputProps>(function NoteInput(
         setDescription('')
         setExistingUploads([])
         setNewUploads([])
+        setTempUploads([])
         setCountdownDate('')
         setCountdownTime('')
         setIsCountdownMode(false)
